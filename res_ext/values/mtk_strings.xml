@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2007 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+     <!-- MTK Wi-Fi hotspot client start -->
+    <string name="wifi_tether_auto_disable_title">Keep Wi-Fi hotspot on</string>
+    <string name="wifi_tether_wps_connect_title">WPS connect</string>
+    <string name="wifi_tether_wps_connect_summary">Selected Wi-Fi protected setup mode to proceed</string>
+    <string name="wifi_tether_wps_pin_error">Invalid PIN</string>
+    <string name="wifi_tethering_title">Wi-Fi hotspot</string>
+    <string name="wifi_ap_wps_dialog_title">WPS connect</string>
+    <string name="wifi_ap_wps_mode_title">WPS mode</string>
+    <string name="wifi_ap_wps_pin_title">Type PIN from client</string>
+    <string name="wifi_ap_reset_OOB_title">Reset network SSID, security and password to default ( out-of-box configuration for WPS )</string>
+    <string name="wifi_ap_reset_OOB">Reset OOB</string>
+    <string name="wifi_ap_max_connection_title">Maximum connections</string>
+    <string name="wifi_ap_connected_title">Connected users</string>
+    <string name="wifi_ap_blocked_title">Blocked users</string>
+    <string name="wifi_ap_client_block_title">Block</string>
+    <string name="wifi_ap_client_unblock_title">Unblock</string>
+    <string name="wifi_ap_client_details_title">Details</string>
+    <string name="wifi_ap_client_mac_label">MAC address:</string>
+    <string name="wifi_ap_client_ip_label">IP address:</string>
+    <!-- MTK Wi-Fi hotspot client end -->
+</resources>

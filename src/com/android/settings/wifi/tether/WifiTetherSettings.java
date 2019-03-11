@@ -37,9 +37,16 @@ import com.android.settings.dashboard.RestrictedDashboardFragment;
 import com.android.settings.widget.SwitchBar;
 import com.android.settings.widget.SwitchBarController;
 import com.android.settingslib.core.AbstractPreferenceController;
-
+import com.mediatek.settings.wifi.tether.WifiTetherMaxConnectionPreferenceController;
+import com.mediatek.settings.wifi.tether.WifiTetherResetPreferenceController;
+import com.mediatek.settings.wifi.tether.WifiTetherUserPreferenceController;
+import com.mediatek.settings.ext.IWifiTetherSettingsExt;
+import com.mediatek.settings.UtilsExt;
 import java.util.ArrayList;
 import java.util.List;
+
+import java.util.UUID;
+import java.util.Random;
 
 public class WifiTetherSettings extends RestrictedDashboardFragment
         implements WifiTetherBasePreferenceController.OnTetherConfigUpdateListener {
@@ -54,8 +61,15 @@ public class WifiTetherSettings extends RestrictedDashboardFragment
     private WifiTetherApBandPreferenceController mApBandPreferenceController;
     private WifiTetherSecurityPreferenceController mSecurityPreferenceController;
 
+    private WifiTetherMaxConnectionPreferenceController mMaxConnectionPreferenceController;
+    private WifiTetherResetPreferenceController mResetPreferenceController;
+    private WifiTetherUserPreferenceController mUserPreferenceController;
+
     private WifiManager mWifiManager;
     private boolean mRestartWifiApAfterConfigChange;
+    private IWifiTetherSettingsExt mWifiTetherSettingsExt;
+    private static final int RAND_SSID_INT_MIN = 1000;
+    private static final int RAND_SSID_INT_MAX = 9999;
 
     @VisibleForTesting
     TetherChangeReceiver mTetherChangeReceiver;
@@ -84,6 +98,10 @@ public class WifiTetherSettings extends RestrictedDashboardFragment
         super.onAttach(context);
         mWifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         mTetherChangeReceiver = new TetherChangeReceiver();
+        /// M: Hotspot manager settings @{
+       // int tileLimit = 3;
+      //  mProgressiveDisclosureMixin.setTileLimit(tileLimit);
+        // / @}
     }
 
     @Override
@@ -126,17 +144,31 @@ public class WifiTetherSettings extends RestrictedDashboardFragment
     @Override
     protected List<AbstractPreferenceController> createPreferenceControllers(Context context) {
         final List<AbstractPreferenceController> controllers = new ArrayList<>();
+        mWifiTetherSettingsExt = UtilsExt.getWifiTetherSettingsExt(context);
         mSSIDPreferenceController = new WifiTetherSSIDPreferenceController(context, this);
         mSecurityPreferenceController = new WifiTetherSecurityPreferenceController(context, this);
         mPasswordPreferenceController = new WifiTetherPasswordPreferenceController(context, this);
         mApBandPreferenceController = new WifiTetherApBandPreferenceController(context, this);
-
+        /// M: Hotspot manager settings @{
+        mMaxConnectionPreferenceController
+                                      = new WifiTetherMaxConnectionPreferenceController(context, this);
+        mResetPreferenceController = new WifiTetherResetPreferenceController(context, this, getFragmentManager());
+        mUserPreferenceController = new WifiTetherUserPreferenceController(context, getLifecycle());
+        /// @}
         controllers.add(mSSIDPreferenceController);
         controllers.add(mSecurityPreferenceController);
         controllers.add(mPasswordPreferenceController);
         controllers.add(mApBandPreferenceController);
         controllers.add(
                 new WifiTetherAutoOffPreferenceController(context, KEY_WIFI_TETHER_AUTO_OFF));
+        /// M: Hotspot manager settings @{
+        controllers.add(mMaxConnectionPreferenceController);
+        controllers.add(mResetPreferenceController);
+        controllers.add(mUserPreferenceController);
+        /// @}
+        /// M: Plugin feature @{
+        mWifiTetherSettingsExt.addPreferenceController(context, controllers, this);
+        /// @}
         return controllers;
     }
 
@@ -161,6 +193,7 @@ public class WifiTetherSettings extends RestrictedDashboardFragment
 
     private WifiConfiguration buildNewConfig() {
         final WifiConfiguration config = new WifiConfiguration();
+
         final int securityType = mSecurityPreferenceController.getSecurityType();
 
         config.SSID = mSSIDPreferenceController.getSSID();
@@ -208,4 +241,34 @@ public class WifiTetherSettings extends RestrictedDashboardFragment
             }
         }
     }
+
+    /// M: Hotspot manager settings, onSecurityChanged & onNetworkReset @{
+
+    @Override
+    public void onNetworkReset() {
+        // Reset ssid as random ssid
+        Random random = new Random();
+        int randomSsid = random.nextInt((RAND_SSID_INT_MAX - RAND_SSID_INT_MIN) + 1) + RAND_SSID_INT_MIN;
+        String ssid = WifiTetherSSIDPreferenceController.DEFAULT_SSID + "_" + randomSsid;
+        mSSIDPreferenceController.setSSID(ssid);
+        mSecurityPreferenceController.setSecurityType();
+        // Reset ssid password random password and enabled password preference
+        mPasswordPreferenceController.setEnabled(true);
+        String randomUUID = UUID.randomUUID().toString();
+        String randomPassword = randomUUID.substring(0, 8) + randomUUID.substring(9, 13);
+        mPasswordPreferenceController.setPassword(randomPassword);
+        // Change config
+        onTetherConfigUpdated();
+    }
+
+    @Override
+    public void onSecurityChanged() {
+        // Set password preference status depend on security type
+     //   mPasswordPreferenceController
+     //           .setEnabled(mSecurityPreferenceController.getSecurityIndex()
+     //                   == WifiTetherSecurityPreferenceController.WPA2_INDEX);
+        // Change config
+        onTetherConfigUpdated();
+    }
+    /// @}
 }

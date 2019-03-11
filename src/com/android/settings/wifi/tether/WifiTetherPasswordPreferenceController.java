@@ -21,6 +21,7 @@ import android.net.wifi.WifiConfiguration;
 import android.support.v7.preference.EditTextPreference;
 import android.support.v7.preference.Preference;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.settings.R;
 import com.android.settings.widget.ValidatedEditTextPreference;
@@ -53,11 +54,21 @@ public class WifiTetherPasswordPreferenceController extends WifiTetherBasePrefer
             mPassword = generateRandomPassword();
         } else {
             mPassword = config.preSharedKey;
+            Log.d(TAG, "Updating password in Preference, " + mPassword);
         }
+
         ((ValidatedEditTextPreference) mPreference).setValidator(this);
         ((ValidatedEditTextPreference) mPreference).setIsPassword(true);
         ((ValidatedEditTextPreference) mPreference).setIsSummaryPassword(true);
         updatePasswordDisplay((EditTextPreference) mPreference);
+        /// M: Hotspot settings, update password base on security type @{
+        //if (config == null || config.allowedKeyManagement == null
+       //         || config.allowedKeyManagement.get(WifiConfiguration.KeyMgmt.WPA2_PSK)) {
+       //     mPreference.setEnabled(true);
+      //  } else {
+      //      mPreference.setEnabled(false);
+      //  }
+        /// @}
     }
 
     @Override
@@ -115,4 +126,20 @@ public class WifiTetherPasswordPreferenceController extends WifiTetherBasePrefer
             pref.setVisible(false);
         }
     }
+
+    /// M: Hotspot settings reset network will reset password @{
+    public void setPassword(String password) {
+        mPassword = password;
+        updatePasswordDisplay((EditTextPreference) mPreference);
+    }
+
+    public void setEnabled(boolean status) {
+        mPreference.setEnabled(status);
+        if (status && TextUtils.isEmpty(mPassword)) {
+            String randomUUID = UUID.randomUUID().toString();
+            mPassword = randomUUID.substring(0, 8) + randomUUID.substring(9, 13);
+            updatePasswordDisplay((EditTextPreference) mPreference);
+        }
+    }
+    /// @}
 }
