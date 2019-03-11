@@ -27,6 +27,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,6 +38,7 @@ import android.os.Message;
 import android.os.PersistableBundle;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.provider.Settings;
 import android.provider.Telephony;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceGroup;
@@ -60,6 +63,15 @@ import com.android.internal.telephony.uicc.UiccController;
 import com.android.settings.R;
 import com.android.settings.RestrictedSettingsFragment;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.cdma.CdmaApnSetting;
+import com.mediatek.settings.cdma.CdmaUtils;
+import com.mediatek.settings.FeatureOption;
+import com.mediatek.settings.ext.IApnSettingsExt;
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.TelephonyUtils;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+
 
 import java.util.ArrayList;
 
@@ -84,7 +96,8 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     private static final int TYPES_INDEX = 3;
     private static final int MVNO_TYPE_INDEX = 4;
     private static final int MVNO_MATCH_DATA_INDEX = 5;
-
+    /// M: check source type, some types are not editable USER_EDITABLE
+   private static final int SOURCE_TYPE_INDEX = 6;
     private static final int MENU_NEW = Menu.FIRST;
     private static final int MENU_RESTORE = Menu.FIRST + 1;
 
@@ -103,7 +116,6 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     private RestoreApnProcessHandler mRestoreApnProcessHandler;
     private HandlerThread mRestoreDefaultApnThread;
     private SubscriptionInfo mSubscriptionInfo;
-    private int mSubId;
     private UiccController mUiccController;
     private String mMvnoType;
     private String mMvnoMatchData;
@@ -116,6 +128,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
 
     private boolean mHideImsApn;
     private boolean mAllowAddingApns;
+    private boolean mRestoreOngoing = false;
 
     public ApnSettings() {
         super(UserManager.DISALLOW_CONFIG_MOBILE_NETWORKS);
@@ -127,27 +140,22 @@ public class ApnSettings extends RestrictedSettingsFragment implements
             if (intent.getAction().equals(
                     TelephonyIntents.ACTION_ANY_DATA_CONNECTION_STATE_CHANGED)) {
                 PhoneConstants.DataState state = getMobileDataState(intent);
+                Log.d(TAG, "onReceive ACTION_ANY_DATA_CONNECTION_STATE_CHANGED,state = " + state);
                 switch (state) {
                 case CONNECTED:
                     if (!mRestoreDefaultApnMode) {
                         fillList();
                     } else {
-                        showDialog(DIALOG_RESTORE_DEFAULTAPN);
+                        /// M: for ALPS02326359, should not show dialog here
+                        // showDialog(DIALOG_RESTORE_DEFAULTAPN);
                     }
                     break;
                 }
-            } else if(intent.getAction().equals(
-                    TelephonyManager.ACTION_SUBSCRIPTION_CARRIER_IDENTITY_CHANGED)) {
-                if (!mRestoreDefaultApnMode) {
-                    int extraSubId = intent.getIntExtra(TelephonyManager.EXTRA_SUBSCRIPTION_ID,
-                            SubscriptionManager.INVALID_SUBSCRIPTION_ID);
-                    if (extraSubId != mSubId) {
-                        // subscription has changed
-                        mSubId = extraSubId;
-                        mSubscriptionInfo = getSubscriptionInfo(mSubId);
-                    }
-                    fillList();
-                }
+                /// M: disable screen when MMS in transaction
+                updateScreenForDataStateChange(context, intent);
+            } else if (Intent.ACTION_AIRPLANE_MODE_CHANGED.equals(intent.getAction())) {
+                /// M: Update the screen enable status, if airplane mode change
+                updateScreenEnableState(context);
             }
         }
     };
@@ -170,16 +178,43 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         final Activity activity = getActivity();
-        mSubId = activity.getIntent().getIntExtra(SUB_ID,
+        final int subId = activity.getIntent().getIntExtra(SUB_ID,
                 SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         mMobileStateFilter = new IntentFilter(
                 TelephonyIntents.ACTION_ANY_DATA_CONNECTION_STATE_CHANGED);
+        /// M: for Airplane mode check
+        mMobileStateFilter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
 
         setIfOnlyAvailableForAdmins(true);
 
-        mSubscriptionInfo = getSubscriptionInfo(mSubId);
+        mSubscriptionInfo = SubscriptionManager.from(activity).getActiveSubscriptionInfo(subId);
         mUiccController = UiccController.getInstance();
+
+        /// M: @{
+        if (mSubscriptionInfo == null) {
+            Log.d(TAG, "onCreate()... Invalid subId: " + subId);
+            getActivity().finish();
+        }
+        /// @}
+
+        /// M: for [SIM Hot Swap] @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getActivity().getApplicationContext());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                Log.d(TAG, "onSimHotSwap, finish activity");
+                if (getActivity() != null) {
+                    getActivity().finish();
+                }
+            }
+        });
+        /// @}
+
+        /// M: @{
+        mApnExt = UtilsExt.getApnSettingsExt(activity);
+        mApnExt.initTetherField(this);
+        /// @ }
 
         CarrierConfigManager configManager = (CarrierConfigManager)
                 getSystemService(Context.CARRIER_CONFIG_SERVICE);
@@ -225,7 +260,15 @@ public class ApnSettings extends RestrictedSettingsFragment implements
 
         if (!mRestoreDefaultApnMode) {
             fillList();
+            /// M: In case dialog not dismiss as activity is in background, so when resume back,
+            // need to remove the dialog @{
+            removeDialog(DIALOG_RESTORE_DEFAULTAPN);
+            /// @}
         }
+
+        /// M: for plug-in
+        mApnExt.updateTetherState();
+        mApnExt.onApnSettingsEvent(IApnSettingsExt.RESUME);
     }
 
     @Override
@@ -237,6 +280,9 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         }
 
         getActivity().unregisterReceiver(mMobileStateReceiver);
+
+        /// M: for plug-in
+        mApnExt.onApnSettingsEvent(IApnSettingsExt.PAUSE);
     }
 
     @Override
@@ -246,6 +292,13 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         if (mRestoreDefaultApnThread != null) {
             mRestoreDefaultApnThread.quit();
         }
+
+        /// M: for [SIM Hot Swap] @{
+        if (mSimHotSwapHandler != null) {
+            mSimHotSwapHandler.unregisterOnSimHotSwap();
+        }
+        /// @}
+        mApnExt.onDestroy();
     }
 
     @Override
@@ -259,28 +312,56 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         return null;
     }
 
-    private SubscriptionInfo getSubscriptionInfo(int subId) {
-        return SubscriptionManager.from(getActivity()).getActiveSubscriptionInfo(subId);
-    }
-
-    private void fillList() {
+    public void fillList() {
         final TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         final int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
                 : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
-        final String mccmnc = mSubscriptionInfo == null ? "" : tm.getSimOperator(subId);
+        String mccmnc = mSubscriptionInfo == null ? "" : tm.getSimOperator(subId);
+        /// M: for plug-in @{
+        // use mcc&mnc in IMPI to query apn.
+        Log.d(TAG, "before plugin, mccmnc = " + mccmnc);
+        mccmnc = mApnExt.getOperatorNumericFromImpi(mccmnc,
+                SubscriptionManager.getPhoneId(mSubscriptionInfo.getSubscriptionId()));
+        /// @}
         Log.d(TAG, "mccmnc = " + mccmnc);
+       /*
         StringBuilder where = new StringBuilder("numeric=\"" + mccmnc +
                 "\" AND NOT (type='ia' AND (apn=\"\" OR apn IS NULL)) AND user_visible!=0");
+        */
 
+        String where = "numeric=\"" + mccmnc + "\"";
+        /// M: for [C2K APN Customization] @{
+        if (mSubscriptionInfo != null) {
+            if (CdmaUtils.isSupportCdma(subId)) {
+                where = CdmaApnSetting.customizeQuerySelectionforCdma(where, mccmnc, subId);
+            }
+        }
+        /// @}
+
+        where += " AND NOT (type='ia' AND (apn=\"\" OR apn IS NULL)) AND user_visible!=0";
+
+        /// M: for VoLTE, do not show ims apn for non-VoLTE project @{
+        /*
         if (mHideImsApn) {
             where.append(" AND NOT (type='ims')");
         }
-
-        Cursor cursor = getContentResolver().query(Telephony.Carriers.CONTENT_URI, new String[] {
-                "_id", "name", "apn", "type", "mvno_type", "mvno_match_data"}, where.toString(),
-                null, Telephony.Carriers.DEFAULT_SORT_ORDER);
+        */
+        if (!FeatureOption.MTK_VOLTE_SUPPORT || mHideImsApn) {
+            where += " AND NOT (type='ims' OR type='ia,ims')";
+        }
+        /// @}
+        /// M: for plug-in
+        where = mApnExt.getFillListQuery(where, mccmnc);
+        Log.d(TAG, "fillList where: " + where);
+        String order = mApnExt.getApnSortOrder(Telephony.Carriers.DEFAULT_SORT_ORDER);
+        Log.d(TAG, "fillList sort: " + order);
+        Cursor cursor = getContentResolver().query(
+                Telephony.Carriers.CONTENT_URI,
+                new String[] { "_id", "name", "apn", "type", "mvno_type", "mvno_match_data",
+                        "sourcetype" }, where.toString(), null, order);
 
         if (cursor != null) {
+            Log.d(TAG, "fillList, cursor count: " + cursor.getCount());
             IccRecords r = null;
             if (mUiccController != null && mSubscriptionInfo != null) {
                 r = mUiccController.getIccRecords(
@@ -303,7 +384,15 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                 String type = cursor.getString(TYPES_INDEX);
                 String mvnoType = cursor.getString(MVNO_TYPE_INDEX);
                 String mvnoMatchData = cursor.getString(MVNO_MATCH_DATA_INDEX);
-
+                /// M: check source type, some types are not editable
+                int sourcetype = cursor.getInt(SOURCE_TYPE_INDEX);
+                /// M: skip specific APN type
+                if(shouldSkipApn(type)) {
+                    cursor.moveToNext();
+                    continue;
+                }
+                /// M: for plug-in
+                name = mApnExt.updateApnName(name, sourcetype);
                 ApnPreference pref = new ApnPreference(getPrefContext());
 
                 pref.setKey(key);
@@ -313,15 +402,39 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                 pref.setOnPreferenceChangeListener(this);
                 pref.setSubId(subId);
 
-                boolean selectable = ((type == null) || !type.equals("mms"));
+                /// M: for [Read Only APN]
+                pref.setApnEditable(mApnExt.isAllowEditPresetApn(type, apn, mccmnc, sourcetype));
+                pref.setSubId(mSubscriptionInfo == null ? null : mSubscriptionInfo
+                        .getSubscriptionId());
+
+                /// M: for ALPS02500557, do not select emergency APN
+                boolean selectable = ((type == null) || (!type.equals("mms")
+                        && !type.equals("ia") && !type.equals("ims") && !type.equals("emergency")))
+                        /// M: for plug-in
+                        && mApnExt.isSelectable(type);
                 pref.setSelectable(selectable);
+                Log.d(TAG, "mSelectedKey = " + mSelectedKey + " key = " + key + " name = " + name +
+                        " selectable=" + selectable);
                 if (selectable) {
+                    /// M: select prefer APN later, as the apn list are not solid now @{
+                    /*
                     if ((mSelectedKey != null) && mSelectedKey.equals(key)) {
                         pref.setChecked();
                     }
+                    */
+                    /// @}
                     addApnToList(pref, mnoApnList, mvnoApnList, r, mvnoType, mvnoMatchData);
+                    /// M: For CT feature,when apns-conf.xml add type extra value "supl",
+                    //     selectable maybe ture when 46011 mms, so need this method.
+                    mApnExt.customizeUnselectableApn(apn, mvnoType, mvnoMatchData, mnoApnList, mvnoApnList,
+                            mSubscriptionInfo == null ? null : mSubscriptionInfo
+                                    .getSubscriptionId());
                 } else {
                     addApnToList(pref, mnoMmsApnList, mvnoMmsApnList, r, mvnoType, mvnoMatchData);
+                    /// M: for plug-in
+                    mApnExt.customizeUnselectableApn(apn, mvnoType, mvnoMatchData, mnoMmsApnList, mvnoMmsApnList,
+                            mSubscriptionInfo == null ? null : mSubscriptionInfo
+                                    .getSubscriptionId());
                 }
                 cursor.moveToNext();
             }
@@ -340,18 +453,26 @@ public class ApnSettings extends RestrictedSettingsFragment implements
             for (Preference preference : mnoMmsApnList) {
                 apnList.addPreference(preference);
             }
+
+            /// M: always set a prefer APN
+            setPreferApnChecked(mnoApnList);
+
+            /// M: update screen enable state according to airplane mode, SIM radio status, etc.
+            updateScreenEnableState(getActivity());
         }
     }
 
     private void addApnToList(ApnPreference pref, ArrayList<ApnPreference> mnoList,
                               ArrayList<ApnPreference> mvnoList, IccRecords r, String mvnoType,
                               String mvnoMatchData) {
+        Log.d(TAG, "mvnoType = " + mvnoType + ", mvnoMatchData = " + mvnoMatchData);
         if (r != null && !TextUtils.isEmpty(mvnoType) && !TextUtils.isEmpty(mvnoMatchData)) {
             if (ApnSetting.mvnoMatches(r, mvnoType, mvnoMatchData)) {
                 mvnoList.add(pref);
                 // Since adding to mvno list, save mvno info
                 mMvnoType = mvnoType;
                 mMvnoMatchData = mvnoMatchData;
+                Log.d(TAG, "mvnoMatches...");
             }
         } else {
             mnoList.add(pref);
@@ -361,7 +482,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         if (!mUnavailable) {
-            if (mAllowAddingApns) {
+            if (mAllowAddingApns && !mRestoreOngoing) {
                 menu.add(0, MENU_NEW, 0,
                         getResources().getString(R.string.menu_new))
                         .setIcon(R.drawable.ic_menu_add_white)
@@ -371,7 +492,11 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                     getResources().getString(R.string.menu_restore))
                     .setIcon(android.R.drawable.ic_menu_upload);
         }
-
+        /// M: for plug-in
+        mApnExt.updateMenu(menu, MENU_NEW, MENU_RESTORE,
+                TelephonyManager.getDefault().getSimOperator(
+                mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
+                        : SubscriptionManager.INVALID_SUBSCRIPTION_ID));
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -390,22 +515,30 @@ public class ApnSettings extends RestrictedSettingsFragment implements
     }
 
     private void addNewApn() {
-        Intent intent = new Intent(Intent.ACTION_INSERT, Telephony.Carriers.CONTENT_URI);
-        int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
-                : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
-        intent.putExtra(SUB_ID, subId);
-        if (!TextUtils.isEmpty(mMvnoType) && !TextUtils.isEmpty(mMvnoMatchData)) {
-            intent.putExtra(MVNO_TYPE, mMvnoType);
-            intent.putExtra(MVNO_MATCH_DATA, mMvnoMatchData);
+        if(!mRestoreOngoing) {
+            Log.d(TAG, "addNewApn...");
+            Intent intent = new Intent(Intent.ACTION_INSERT, Telephony.Carriers.CONTENT_URI);
+            int subId = mSubscriptionInfo != null ? mSubscriptionInfo.getSubscriptionId()
+                    : SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+            intent.putExtra(SUB_ID, subId);
+            if (!TextUtils.isEmpty(mMvnoType) && !TextUtils.isEmpty(mMvnoMatchData)) {
+                intent.putExtra(MVNO_TYPE, mMvnoType);
+                intent.putExtra(MVNO_MATCH_DATA, mMvnoMatchData);
+            }
+            /// M: for plug-in
+            mApnExt.addApnTypeExtra(intent);
+            startActivity(intent);
         }
-        startActivity(intent);
     }
 
     @Override
     public boolean onPreferenceTreeClick(Preference preference) {
         int pos = Integer.parseInt(preference.getKey());
         Uri url = ContentUris.withAppendedId(Telephony.Carriers.CONTENT_URI, pos);
-        startActivity(new Intent(Intent.ACTION_EDIT, url));
+        Intent intent = new Intent(Intent.ACTION_EDIT, url);
+        Log.d(TAG, "put subid = " + mSubscriptionInfo.getSubscriptionId());
+        intent.putExtra("sub_id", mSubscriptionInfo.getSubscriptionId());
+        startActivity(intent);
         return true;
     }
 
@@ -439,10 +572,12 @@ public class ApnSettings extends RestrictedSettingsFragment implements
             key = cursor.getString(ID_INDEX);
         }
         cursor.close();
+        Log.d(TAG,"getSelectedApnKey(), key = " + key);
         return key;
     }
 
     private boolean restoreDefaultApn() {
+        Log.d(TAG, "restoreDefaultApn...");
         showDialog(DIALOG_RESTORE_DEFAULTAPN);
         mRestoreDefaultApnMode = true;
 
@@ -480,13 +615,18 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case EVENT_RESTORE_DEFAULTAPN_COMPLETE:
+                    Log.d(TAG, "restore APN complete~~");
                     Activity activity = getActivity();
                     if (activity == null) {
                         mRestoreDefaultApnMode = false;
                         return;
                     }
                     fillList();
-                    getPreferenceScreen().setEnabled(true);
+
+                    boolean airplaneModeEnabled = android.provider.Settings.System.getInt(
+                            activity.getContentResolver(),
+                            android.provider.Settings.System.AIRPLANE_MODE_ON, -1) == 1;
+                    getPreferenceScreen().setEnabled(!airplaneModeEnabled);
                     mRestoreDefaultApnMode = false;
                     removeDialog(DIALOG_RESTORE_DEFAULTAPN);
                     Toast.makeText(
@@ -494,6 +634,7 @@ public class ApnSettings extends RestrictedSettingsFragment implements
                         getResources().getString(
                                 R.string.restore_default_apn_completed),
                         Toast.LENGTH_LONG).show();
+                    mRestoreOngoing = false;
                     break;
             }
         }
@@ -511,10 +652,12 @@ public class ApnSettings extends RestrictedSettingsFragment implements
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case EVENT_RESTORE_DEFAULTAPN_START:
+                    Log.d(TAG, "restore APN start~~");
                     ContentResolver resolver = getContentResolver();
                     resolver.delete(getUriForCurrSubId(DEFAULTAPN_URI), null, null);
                     mRestoreApnUiHandler
                         .sendEmptyMessage(EVENT_RESTORE_DEFAULTAPN_COMPLETE);
+                    mRestoreOngoing = true;
                     break;
             }
         }
@@ -541,5 +684,135 @@ public class ApnSettings extends RestrictedSettingsFragment implements
             return MetricsEvent.DIALOG_APN_RESTORE_DEFAULT;
         }
         return 0;
+    }
+
+    ///---------------------------------------MTK-------------------------------------------------
+    /// M: for [SIM Hot Swap]
+    private SimHotSwapHandler mSimHotSwapHandler;
+
+    private IApnSettingsExt mApnExt;
+
+    private void updateScreenForDataStateChange(Context context, Intent intent) {
+        String apnType  = intent.getStringExtra(PhoneConstants.DATA_APN_TYPE_KEY);
+        Log.d(TAG, "Receiver,send MMS status, get type = " + apnType);
+        if (PhoneConstants.APN_TYPE_MMS.equals(apnType)) {
+            boolean airplaneModeEnabled = android.provider.Settings.System.getInt(context
+                .getContentResolver(), android.provider.Settings.System.AIRPLANE_MODE_ON, -1) == 1;
+            getPreferenceScreen().setEnabled(!airplaneModeEnabled
+                    && !isMmsInTransaction(context)
+                            /// M: for plug-in @{
+                            && mApnExt.getScreenEnableState(mSubscriptionInfo
+                                    .getSubscriptionId(), getActivity()));
+                            /// @}
+        }
+    }
+
+    private void updateScreenEnableState(Context context) {
+        int subId = mSubscriptionInfo.getSubscriptionId();
+        boolean simReady = TelephonyManager.SIM_STATE_READY == TelephonyManager.getDefault()
+                .getSimState(SubscriptionManager.getSlotIndex(subId));
+        boolean airplaneModeEnabled = android.provider.Settings.System.getInt(context
+                .getContentResolver(), android.provider.Settings.System.AIRPLANE_MODE_ON, -1) == 1;
+
+        boolean enable = !airplaneModeEnabled && simReady;
+        Log.d(TAG, "updateScreenEnableState(), subId = " + subId + " ,airplaneModeEnabled = "
+                + airplaneModeEnabled + " ,simReady = " + simReady);
+        getPreferenceScreen().setEnabled(
+                          /// M: for plug-in
+                enable && mApnExt.getScreenEnableState(subId, getActivity()));
+        if (getActivity() != null) {
+            getActivity().invalidateOptionsMenu();
+        }
+    }
+
+    private boolean isMmsInTransaction(Context context) {
+        boolean isMmsInTransaction = false;
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(
+                Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            NetworkInfo networkInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE_MMS);
+            if (networkInfo != null) {
+                NetworkInfo.State state = networkInfo.getState();
+                Log.d(TAG, "mms state = " + state);
+                isMmsInTransaction = (state == NetworkInfo.State.CONNECTING
+                    || state == NetworkInfo.State.CONNECTED);
+            }
+        }
+        return isMmsInTransaction;
+    }
+
+    public boolean shouldSkipApn(String type) {
+        /// M: for plug-in
+        return "cmmail".equals(type);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        int size = menu.size();
+        boolean isAirplaneModeOn = TelephonyUtils.isAirplaneModeOn(getActivity());
+        Log.d(TAG,"onPrepareOptionsMenu isAirplaneModeOn = " + isAirplaneModeOn);
+        // When airplane mode on need to disable options menu
+        for (int i = 0;i< size;i++) {
+            menu.getItem(i).setEnabled(!isAirplaneModeOn);
+        }
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    private Uri getPreferApnUri(int subId) {
+        Uri preferredUri = Uri.withAppendedPath(Uri.parse(PREFERRED_APN_URI), "/subId/" + subId);
+        Log.d(TAG, "getPreferredApnUri: " + preferredUri);
+        /// M: for plug-in
+        preferredUri = mApnExt.getPreferCarrierUri(preferredUri, subId);
+        return preferredUri;
+    }
+
+    private Uri getDefaultApnUri(int subId) {
+        return Uri.withAppendedPath(DEFAULTAPN_URI, "/subId/" + subId);
+    }
+
+    // compare prefer apn and set preference checked state
+    private void setPreferApnChecked(ArrayList<ApnPreference> apnList) {
+        if (apnList == null || apnList.isEmpty()) {
+            return;
+        }
+
+        String selectedKey = null;
+        if (mSelectedKey != null) {
+            for (Preference pref : apnList) {
+                if (mSelectedKey.equals(pref.getKey())) {
+                    ((ApnPreference) pref).setChecked();
+                    selectedKey = mSelectedKey;
+                }
+            }
+        }
+
+        // can't find prefer APN in the list, reset to the first one
+        ///M: Plug-in call to check whether reset to first one or not.
+        if (mApnExt.shouldSelectFirstApn()) {
+            if (selectedKey == null && apnList.get(0) != null) {
+               ((ApnPreference) apnList.get(0)).setChecked();
+               selectedKey = apnList.get(0).getKey();
+            }
+        }
+        // save the new APN
+        if (selectedKey != null && selectedKey != mSelectedKey) {
+            setSelectedApnKey(selectedKey);
+            mSelectedKey = selectedKey;
+        }
+
+        Log.d(TAG, "setPreferApnChecked, APN = " + mSelectedKey);
+    }
+
+    public void onIntentUpdate(Intent newIntent) {
+        final Activity activity = getActivity();
+
+        if (activity == null) {
+            return;
+        }
+
+        final int subId = newIntent.getIntExtra(SUB_ID,
+                SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        mSubscriptionInfo = SubscriptionManager.from(activity).getActiveSubscriptionInfo(subId);
+        Log.d(TAG, "onIntentUpdate sub_id = " + subId);
     }
 }

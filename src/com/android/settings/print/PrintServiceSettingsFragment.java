@@ -419,7 +419,12 @@ public class PrintServiceSettingsFragment extends SettingsPreferenceFragment
 
                 @Override
                 public boolean onQueryTextChange(String searchString) {
-                    mPrintersAdapter.getFilter().filter(searchString);
+                    /// M: fix google issue ALPS01285513 @{
+                    Activity activity = getActivity();
+                    if (activity != null && !activity.isFinishing()) {
+                        mPrintersAdapter.getFilter().filter(searchString);
+                    }
+                    /// @}
                     return true;
                 }
             });

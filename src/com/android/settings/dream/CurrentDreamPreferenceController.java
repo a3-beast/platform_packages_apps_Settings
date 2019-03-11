@@ -69,7 +69,7 @@ public class CurrentDreamPreferenceController extends AbstractPreferenceControll
     private void launchScreenSaverSettings() {
         Optional<DreamInfo> info = getActiveDreamInfo();
         if (!info.isPresent()) return;
-        mBackend.launchSettings(mContext, info.get());
+        mBackend.launchSettings(info.get());
     }
 
     private Optional<DreamInfo> getActiveDreamInfo() {

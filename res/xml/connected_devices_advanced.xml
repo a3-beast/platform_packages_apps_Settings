@@ -27,6 +27,13 @@
         android:icon="@drawable/ic_settings_bluetooth"
         android:order="-9"/>
 
+    <Preference
+        android:fragment="com.mediatek.nfc.NfcSettings"
+        android:key="toggle_mtk_nfc"
+        android:title="@string/nfc_quick_toggle_title"
+        android:icon="@drawable/ic_nfc"
+        android:order="-5"/>
+
     <SwitchPreference
         android:key="toggle_nfc"
         android:title="@string/nfc_quick_toggle_title"

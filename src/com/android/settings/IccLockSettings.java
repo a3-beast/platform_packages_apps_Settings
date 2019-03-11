@@ -16,6 +16,8 @@
 
 package com.android.settings;
 
+/// M: Add for dismiss pin dialog when entering airplane mode.
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -43,10 +45,28 @@ import android.widget.TabHost.TabContentFactory;
 import android.widget.TabHost.TabSpec;
 import android.widget.TabWidget;
 import android.widget.Toast;
+
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
+/// M: Add for checking the fail cause of changing pin code.
+import com.android.internal.telephony.CommandException;
 import com.android.internal.telephony.Phone;
+/// M: Add for SIM Lock feature.
+import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.TelephonyIntents;
+
+/// M: Add for SIM Lock feature. @{
+import com.mediatek.internal.telephony.MtkIccCardConstants;
+/// M: Add for SIM settings plugin. @{
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.ISimRoamingExt;
+/// @}
+/// M: Add for supporting SIM hot swap. @{
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+/// @}
+/// M: Add for checking airplane mode.
+import com.mediatek.settings.sim.TelephonyUtils;
 
 /**
  * Implements the preference screen to enable/disable ICC lock and
@@ -110,6 +130,17 @@ public class IccLockSettings extends SettingsPreferenceFragment
 
     private Resources mRes;
 
+    /// M: Add for checking airplane mode.
+    private boolean mIsAirplaneModeOn = false;
+
+    /// M: Add for supporting SIM hot swap.
+    private SimHotSwapHandler mSimHotSwapHandler;
+
+    /// M: Record the SIM Lock information. @{
+    private int mSimLockPolicy = TelephonyUtils.SIM_LOCK_POLICY_NONE;
+    private int mSimLockSimCapa = TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_FULL;
+    /// @}
+
     // For async handler to identify request type
     private static final int MSG_ENABLE_ICC_PIN_COMPLETE = 100;
     private static final int MSG_CHANGE_ICC_PIN_COMPLETE = 101;
@@ -121,10 +152,12 @@ public class IccLockSettings extends SettingsPreferenceFragment
             AsyncResult ar = (AsyncResult) msg.obj;
             switch (msg.what) {
                 case MSG_ENABLE_ICC_PIN_COMPLETE:
-                    iccLockChanged(ar.exception == null, msg.arg1);
+                    /// M: Add exception and phone object as parameter.
+                    iccLockChanged(ar.exception, msg.arg1, (Phone) ar.userObj);
                     break;
                 case MSG_CHANGE_ICC_PIN_COMPLETE:
-                    iccPinChanged(ar.exception == null, msg.arg1);
+                    /// M: Add exception and phone object as parameter.
+                    iccPinChanged(ar.exception, msg.arg1, (Phone) ar.userObj);
                     break;
                 case MSG_SIM_STATE_CHANGED:
                     updatePreferences();
@@ -138,15 +171,37 @@ public class IccLockSettings extends SettingsPreferenceFragment
     private final BroadcastReceiver mSimStateReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+            Log.d(TAG, "onReceive, action=" + action);
+
             if (TelephonyIntents.ACTION_SIM_STATE_CHANGED.equals(action)) {
                 mHandler.sendMessage(mHandler.obtainMessage(MSG_SIM_STATE_CHANGED));
+            /// M: Dismiss the pin dialog when entering airplane mode. @{
+            } else if (Intent.ACTION_AIRPLANE_MODE_CHANGED.equals(action)) {
+                mIsAirplaneModeOn = intent.getBooleanExtra("state", false);
+                updatePreferences();
+                if (mPinDialog != null) {
+                    if (mIsAirplaneModeOn) {
+                        Dialog dialog = mPinDialog.getDialog();
+                        if (dialog != null && dialog.isShowing()) {
+                            dialog.dismiss();
+                        }
+                    }
+                    resetDialogState();
+                }
+            /// @}
+            /// M: Handle the SIM lock state change event. @{
+            } else if (action.equals(TelephonyIntents.ACTION_SIM_SLOT_LOCK_POLICY_INFORMATION)) {
+                handleSimLockStateChange(intent);
+            /// @}
             }
         }
     };
 
     // For top-level settings screen to query
     static boolean isIccLockEnabled() {
-        return PhoneFactory.getDefaultPhone().getIccCard().getIccLockEnabled();
+        final boolean enabled = PhoneFactory.getDefaultPhone().getIccCard().getIccLockEnabled();
+        Log.d(TAG, "isIccLockEnabled=" + enabled);
+        return enabled;
     }
 
     static String getSummary(Context context) {
@@ -161,10 +216,8 @@ public class IccLockSettings extends SettingsPreferenceFragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (Utils.isMonkeyRunning()) {
-            finish();
-            return;
-        }
+        /// M: Remove monkey checking.
+        // If finishing activity before initialization, JE will happend.
 
         addPreferencesFromResource(R.xml.sim_lock_settings);
 
@@ -200,6 +253,26 @@ public class IccLockSettings extends SettingsPreferenceFragment
         getPreferenceScreen().setPersistent(false);
 
         mRes = getResources();
+
+        /// M: Check airplane mode.
+        mIsAirplaneModeOn = TelephonyUtils.isAirplaneModeOn(getActivity());
+
+        /// M: Add for SIM Lock feature. @{
+        mSimLockPolicy = TelephonyUtils.getSimLockPolicy();
+        Log.d(TAG, "onCreate, policy="
+                + TelephonyUtils.getSimLockPolicyString(mSimLockPolicy));
+        /// @}
+
+        /// M: Add for supporting SIM hot swap. @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getActivity());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                Log.d(TAG, "onSimHotSwap, finish Activity.");
+                finish();
+            }
+        });
+        /// @}
     }
 
     @Override
@@ -236,6 +309,9 @@ public class IccLockSettings extends SettingsPreferenceFragment
 
             mPhone = (sir == null) ? null
                 : PhoneFactory.getPhone(SubscriptionManager.getPhoneId(sir.getSubscriptionId()));
+            Log.d(TAG, "onCreateView, phone=" + (mPhone == null ? "null" : mPhone));
+            /// M: Add for SIM Lock feature.
+            updateSimCapabilityForSimLock(mPhone);
 
             if (savedInstanceState != null && savedInstanceState.containsKey(CURRENT_TAB)) {
                 mTabHost.setCurrentTabByTag(savedInstanceState.getString(CURRENT_TAB));
@@ -243,6 +319,8 @@ public class IccLockSettings extends SettingsPreferenceFragment
             return view;
         } else {
             mPhone = PhoneFactory.getDefaultPhone();
+            /// M: Add for SIM Lock feature.
+            updateSimCapabilityForSimLock(mPhone);
             return super.onCreateView(inflater, container, savedInstanceState);
         }
     }
@@ -254,14 +332,21 @@ public class IccLockSettings extends SettingsPreferenceFragment
     }
 
     private void updatePreferences() {
+        /// M: Add for SIM Lock feature.
+        boolean enableForSimLock = shouldEnableScreenForSimLock(mSimLockSimCapa);
+
         if (mPinDialog != null) {
-            mPinDialog.setEnabled(mPhone != null);
+            /// M: Disable pin change in airplane mode.
+            mPinDialog.setEnabled(mPhone != null && !mIsAirplaneModeOn && enableForSimLock);
         }
         if (mPinToggle != null) {
-            mPinToggle.setEnabled(mPhone != null);
+            /// M: Disable pin lock in airplane mode.
+            mPinToggle.setEnabled(mPhone != null && !mIsAirplaneModeOn && enableForSimLock);
 
             if (mPhone != null) {
-                mPinToggle.setChecked(mPhone.getIccCard().getIccLockEnabled());
+                final boolean enabled = mPhone.getIccCard().getIccLockEnabled();
+                Log.d(TAG, "iccLockEnabled=" + enabled);
+                mPinToggle.setChecked(enabled);
             }
         }
     }
@@ -278,7 +363,35 @@ public class IccLockSettings extends SettingsPreferenceFragment
         // ACTION_SIM_STATE_CHANGED is sticky, so we'll receive current state after this call,
         // which will call updatePreferences().
         final IntentFilter filter = new IntentFilter(TelephonyIntents.ACTION_SIM_STATE_CHANGED);
+
+        /// M: Receive airplane mode changed.
+        filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        /// M: Add for SIM Lock feature.
+        filter.addAction(TelephonyIntents.ACTION_SIM_SLOT_LOCK_POLICY_INFORMATION);
+
         getContext().registerReceiver(mSimStateReceiver, filter);
+
+        /// M: For ALPS02323548, update preference when activity resumed. @{
+        mIsAirplaneModeOn = TelephonyUtils.isAirplaneModeOn(getActivity());
+        /// M: Add for SIM Lock feature. @{
+        mSimLockPolicy = TelephonyUtils.getSimLockPolicy();
+        updateSimCapabilityForSimLock(mPhone);
+        boolean enableForSimLock = shouldEnableScreenForSimLock(mSimLockSimCapa);
+        Log.d(TAG, "onResume, phone=" + mPhone + ", airplaneMode=" + mIsAirplaneModeOn
+                + ", policy=" + TelephonyUtils.getSimLockPolicyString(mSimLockPolicy)
+                + ", capa=" + TelephonyUtils.getSimLockSimCapabilityString(mSimLockSimCapa));
+        if (mPhone == null || mIsAirplaneModeOn || !enableForSimLock) {
+            if (mPinDialog != null) {
+                Dialog dialog = mPinDialog.getDialog();
+                if (dialog != null && dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+                resetDialogState();
+            }
+        }
+        /// @}
+        updatePreferences();
+        /// @}
 
         if (mDialogState != OFF_MODE) {
             showPinDialog();
@@ -378,6 +491,7 @@ public class IccLockSettings extends SettingsPreferenceFragment
             message = mError + "\n" + message;
             mError = null;
         }
+        Log.d(TAG, "setDialogValues, dialogState=" + mDialogState);
         mPinDialog.setDialogMessage(message);
     }
 
@@ -392,7 +506,12 @@ public class IccLockSettings extends SettingsPreferenceFragment
         if (!reasonablePin(mPin)) {
             // inject error message and display dialog again
             mError = mRes.getString(R.string.sim_bad_pin);
-            showPinDialog();
+
+            /// M: For ALPS02367598, show pin dialog when activity resumed only. @{
+            if (isResumed()) {
+                showPinDialog();
+            }
+            /// @}
             return;
         }
         switch (mDialogState) {
@@ -445,47 +564,108 @@ public class IccLockSettings extends SettingsPreferenceFragment
     private void tryChangeIccLockState() {
         // Try to change icc lock. If it succeeds, toggle the lock state and
         // reset dialog state. Else inject error message and show dialog again.
-        Message callback = Message.obtain(mHandler, MSG_ENABLE_ICC_PIN_COMPLETE);
-        mPhone.getIccCard().setIccLockEnabled(mToState, mPin, callback);
-        // Disable the setting till the response is received.
-        mPinToggle.setEnabled(false);
+
+        /// M: Add Phone into message to avoid updating the wrong tab.
+        Message callback = Message.obtain(mHandler, MSG_ENABLE_ICC_PIN_COMPLETE, mPhone);
+        /// M: For ALPS02326255, Phone may be null. @{
+        if (mPhone != null) {
+            Log.d(TAG, "tryChangeIccLockState, toState=" + mToState);
+            mPhone.getIccCard().setIccLockEnabled(mToState, mPin, callback);
+            // Disable the setting till the response is received.
+            mPinToggle.setEnabled(false);
+        }
+        /// @}
     }
 
-    private void iccLockChanged(boolean success, int attemptsRemaining) {
-        if (success) {
+    /// M: Add Phone as parameter to avoid updating the wrong tab. @{
+    private void iccLockChanged(Throwable exception, int attemptsRemaining, Phone phone) {
+        Log.d(TAG, "iccLockChanged, exception=" + exception + ", attemptsRemaining="
+                + attemptsRemaining);
+        boolean success = (exception == null);
+
+        boolean matched = (mPhone != null && mPhone.equals(phone));
+        Log.d(TAG, "iccLockChanged, success=" + success + ", matched=" + matched
+                + ", currentPhone=" + (mPhone == null ? "null" : mPhone)
+                + ", oldPhone=" + phone);
+
+        if (success && matched) {
             mPinToggle.setChecked(mToState);
-        } else {
-            Toast.makeText(getContext(), getPinPasswordErrorMessage(attemptsRemaining),
-                    Toast.LENGTH_LONG).show();
+            /// M: Add for SIM settings plugin.
+            UtilsExt.getSimRoamingExt(getActivity()).showPinToast(mToState);
+        } else if (!success) {
+            /// M: For ALPS03334997, no toast when context unavailable.
+            if (getContext() != null) {
+                /// M: Get the error message with error cause.
+                Toast.makeText(getContext(), getPinPasswordErrorMessage(
+                        attemptsRemaining, exception), Toast.LENGTH_LONG).show();
+            }
         }
-        mPinToggle.setEnabled(true);
+
+        if (!matched) {
+            return;
+        }
+
+        mPinToggle.setEnabled(!mIsAirplaneModeOn);
         resetDialogState();
     }
+    /// @}
 
-    private void iccPinChanged(boolean success, int attemptsRemaining) {
+    /// M: Add Phone as parameter to avoid updating the wrong tab. @{
+    private void iccPinChanged(Throwable exception, int attemptsRemaining, Phone phone) {
+        Log.d(TAG, "iccPinChanged, exception=" + exception + ", attemptsRemaining="
+                + attemptsRemaining);
+        boolean success = (exception == null);
+
+        boolean matched = (mPhone != null && mPhone.equals(phone));
+        Log.d(TAG, "iccPinChanged, success=" + success + ", matched=" + matched
+                + ", currPhone=" + (mPhone == null ? "null" : mPhone)
+                + ", oldPhone=" + phone);
+
         if (!success) {
-            Toast.makeText(getContext(), getPinPasswordErrorMessage(attemptsRemaining),
-                    Toast.LENGTH_LONG)
-                    .show();
+            Toast.makeText(getContext(), getPinPasswordErrorMessage(
+                    attemptsRemaining, exception), Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(getContext(), mRes.getString(R.string.sim_change_succeeded),
                     Toast.LENGTH_SHORT)
                     .show();
-
         }
+
+        if (!matched) {
+            return;
+        }
+
         resetDialogState();
     }
+    /// @}
 
     private void tryChangePin() {
-        Message callback = Message.obtain(mHandler, MSG_CHANGE_ICC_PIN_COMPLETE);
-        mPhone.getIccCard().changeIccLockPassword(mOldPin,
-                mNewPin, callback);
+        /// M: For ALPS02326255, Phone may be null. @{
+        if (mPhone != null) {
+            /// M: Add Phone into message to avoid updating the wrong tab.
+            Message callback = Message.obtain(mHandler, MSG_CHANGE_ICC_PIN_COMPLETE, mPhone);
+            mPhone.getIccCard().changeIccLockPassword(mOldPin,
+                    mNewPin, callback);
+            Log.d(TAG, "tryChangePin, change pin.");
+        }
+        /// @}
     }
 
-    private String getPinPasswordErrorMessage(int attemptsRemaining) {
+    /// M: Add exception as parameter to get the error message with error cause.
+    private String getPinPasswordErrorMessage(int attemptsRemaining, Throwable exception) {
         String displayMessage;
 
-        if (attemptsRemaining == 0) {
+        /// M: Get the error message with error cause. @{
+        // When enable pin or change pin failed, reason is not pin wrong
+        // but Error.GENERIC_FAILURE or Error.SIM_ERR,
+        // error message should return pin fail.
+        if (exception instanceof CommandException
+                && (((CommandException) exception).getCommandError() ==
+                CommandException.Error.GENERIC_FAILURE ||
+                 ((CommandException) exception).getCommandError() ==
+                CommandException.Error.SIM_ERR)) {
+            displayMessage = mRes.getString(R.string.pin_failed);
+        /// @}
+        } else if (attemptsRemaining == 0) {
             displayMessage = mRes.getString(R.string.wrong_pin_code_pukked);
         } else if (attemptsRemaining > 0) {
             displayMessage = mRes
@@ -524,9 +704,15 @@ public class IccLockSettings extends SettingsPreferenceFragment
 
             mPhone = (sir == null) ? null
                 : PhoneFactory.getPhone(SubscriptionManager.getPhoneId(sir.getSubscriptionId()));
+            Log.d(TAG, "onTabChanged(), phone=" + (mPhone == null ? "null" : mPhone));
+            /// M: Add for SIM Lock feature.
+            updateSimCapabilityForSimLock(mPhone);
 
             // The User has changed tab; update the body.
             updatePreferences();
+
+            /// M: For ALPS03349075, clear dialog.
+            resetDialogState();
         }
     };
 
@@ -541,4 +727,128 @@ public class IccLockSettings extends SettingsPreferenceFragment
         return mTabHost.newTabSpec(tag).setIndicator(title).setContent(
                 mEmptyTabContent);
     }
+
+    @Override
+    public void onDestroy() {
+        /// M: Add for supporting SIM hot swap. @{
+        if (mSimHotSwapHandler != null) {
+            mSimHotSwapHandler.unregisterOnSimHotSwap();
+        }
+        /// @}
+        super.onDestroy();
+    };
+
+    /// M: Add for SIM Lock feature. @{
+    /**
+     * When SIM lock state changed, some parts need to be enabled or disabled.
+     */
+    private void handleSimLockStateChange(Intent intent) {
+        Bundle extra = intent.getExtras();
+        if (extra == null) {
+            Log.d(TAG, "handleSimLockStateChange, extra=null");
+            return;
+        }
+
+        mSimLockPolicy = extra.getInt(
+                MtkIccCardConstants.INTENT_KEY_SML_SLOT_DEVICE_LOCK_POLICY,
+                mSimLockPolicy);
+
+        int slotId = extra.getInt(PhoneConstants.SLOT_KEY,
+                SubscriptionManager.INVALID_SIM_SLOT_INDEX);
+        if (SubscriptionManager.isValidSlotIndex(slotId)
+                && mPhone != null && mPhone.getPhoneId() == slotId) {
+            int simCapa = extra.getInt(
+                    MtkIccCardConstants.INTENT_KEY_SML_SLOT_SIM_SERVICE_CAPABILITY,
+                    mSimLockSimCapa);
+            Log.d(TAG, "handleSimLockStateChange, policy="
+                    + TelephonyUtils.getSimLockPolicyString(mSimLockPolicy)
+                    + ", slotId=" + slotId + ", prevCapa="
+                    + TelephonyUtils.getSimLockSimCapabilityString(mSimLockSimCapa)
+                    + ", currCapa="
+                    + TelephonyUtils.getSimLockSimCapabilityString(simCapa));
+
+            updateScreenForSimLock(simCapa);
+        }
+    }
+
+    private void updateSimCapabilityForSimLock(Phone phone) {
+        switch (mSimLockPolicy) {
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT1_ONLY:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT2_ONLY:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT1_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT2_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL_LINKED_WITH_CS:
+                if (phone != null) {
+                    mSimLockSimCapa = TelephonyUtils.getSimLockSimCapability(
+                            phone.getPhoneId());
+                } else {
+                    mSimLockSimCapa = TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_UNKNOWN;
+                }
+                break;
+
+            default:
+                mSimLockSimCapa = TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_FULL;
+                break;
+        }
+    }
+
+    private boolean shouldEnableScreenForSimLock(int capa) {
+        boolean enable = true;
+        switch (mSimLockPolicy) {
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT1_ONLY:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT2_ONLY:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT1_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT2_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL_LINKED:
+            case TelephonyUtils.SIM_LOCK_POLICY_SLOT_ALL_LINKED_WITH_CS:
+                switch (capa) {
+                    case TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_FULL:
+                    case TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_PS_ONLY:
+                    case TelephonyUtils.SIM_LOCK_SIM_CAPABILITY_CS_ONLY:
+                        break;
+
+                    default:
+                        enable = false;
+                        break;
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        if (!enable) {
+            Log.d(TAG, "shouldEnableScreenForSimLock, policy="
+                    + TelephonyUtils.getSimLockPolicyString(mSimLockPolicy)
+                    + ", capa=" + TelephonyUtils.getSimLockSimCapabilityString(capa));
+        }
+
+        return enable;
+    }
+
+    private void updateScreenForSimLock(int capa) {
+        if (mSimLockSimCapa == capa) {
+            return;
+        }
+
+        boolean prevEnable = shouldEnableScreenForSimLock(mSimLockSimCapa);
+        boolean newEnable = shouldEnableScreenForSimLock(capa);
+
+        if (prevEnable != newEnable) {
+            updatePreferences();
+            if (mPinDialog != null) {
+                Dialog dialog = mPinDialog.getDialog();
+                if (dialog != null && dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+                resetDialogState();
+            }
+        }
+
+        mSimLockSimCapa = capa;
+    }
+    /// @}
 }

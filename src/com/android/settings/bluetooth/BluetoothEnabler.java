@@ -33,6 +33,7 @@ import com.android.settingslib.WirelessUtils;
 import com.android.settingslib.bluetooth.LocalBluetoothAdapter;
 import com.android.settingslib.bluetooth.LocalBluetoothManager;
 import com.android.settingslib.core.instrumentation.MetricsFeatureProvider;
+import android.util.Log;
 
 /**
  * BluetoothEnabler is a helper to manage the Bluetooth on/off checkbox
@@ -40,6 +41,7 @@ import com.android.settingslib.core.instrumentation.MetricsFeatureProvider;
  * preference reflects the current state.
  */
 public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchChangeListener {
+    private static final String TAG = "BluetoothEnabler";
     private final SwitchWidgetController mSwitchController;
     private final MetricsFeatureProvider mMetricsFeatureProvider;
     private Context mContext;
@@ -49,6 +51,8 @@ public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchCh
     private final RestrictionUtils mRestrictionUtils;
     private SwitchWidgetController.OnSwitchChangeListener mCallback;
 
+    ///M: indicate whether need to enable/disable BT or just update the preference
+    private boolean mUpdateStatusOnly = false;
     private static final String EVENT_DATA_IS_BT_ON = "is_bluetooth_on";
     private static final int EVENT_UPDATE_INDEX = 0;
     private final int mMetricsEvent;
@@ -59,6 +63,7 @@ public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchCh
             // Broadcast receiver is always running on the UI thread here,
             // so we don't need consider thread synchronization.
             int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+            Log.d(TAG, "BluetoothAdapter state changed to" + state);
             handleStateChanged(state);
         }
     };
@@ -138,15 +143,31 @@ public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchCh
                 mSwitchController.setEnabled(false);
                 break;
             case BluetoothAdapter.STATE_ON:
+                /// M: receive bt status changed broadcast, set mUpdateStatusOnly true @{
+                mUpdateStatusOnly = true;
+                Log.d(TAG, "Begin update status: turn on set mUpdateStatusOnly to true");
+                /// @}
                 setChecked(true);
                 mSwitchController.setEnabled(true);
+                /// M: after set the switch checked status, set mUpdateStatusOnly false @{
+                mUpdateStatusOnly = false;
+                Log.d(TAG, "End update status: turn on set mUpdateStatusOnly to false");
+                /// @}
                 break;
             case BluetoothAdapter.STATE_TURNING_OFF:
                 mSwitchController.setEnabled(false);
                 break;
             case BluetoothAdapter.STATE_OFF:
+                /// M: receive bt status changed broadcast, set mUpdateStatusOnly true @{
+                mUpdateStatusOnly = true;
+                Log.d(TAG, "Begin update status: turn off set mUpdateStatusOnly to true");
+                /// @}
                 setChecked(false);
                 mSwitchController.setEnabled(true);
+                /// M: after set the switch checked status, set mUpdateStatusOnly false @{
+                mUpdateStatusOnly = false;
+                Log.d(TAG, "End update status: turn off set mUpdateStatusOnly to false");
+                /// @}
                 break;
             default:
                 setChecked(false);
@@ -174,7 +195,7 @@ public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchCh
             triggerParentPreferenceCallback(isChecked);
             return true;
         }
-
+        Log.d(TAG, "onSwitchChanged to " + isChecked);
         // Show toast message if Bluetooth is not allowed in airplane mode
         if (isChecked &&
                 !WirelessUtils.isRadioAllowed(mContext, Settings.Global.RADIO_BLUETOOTH)) {
@@ -187,7 +208,9 @@ public final class BluetoothEnabler implements SwitchWidgetController.OnSwitchCh
 
         mMetricsFeatureProvider.action(mContext, mMetricsEvent, isChecked);
 
-        if (mLocalAdapter != null) {
+        Log.d(TAG, "mUpdateStatusOnly is " + mUpdateStatusOnly);
+        /// M: if receive bt status changed broadcast, do not need enable/disable bt.
+        if (mLocalAdapter != null && !mUpdateStatusOnly) {
             boolean status = mLocalAdapter.setBluetoothEnabled(isChecked);
             // If we cannot toggle it ON then reset the UI assets:
             // a) The switch should be OFF but it should still be togglable (enabled = True)

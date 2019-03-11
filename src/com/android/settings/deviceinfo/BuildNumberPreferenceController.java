@@ -46,6 +46,9 @@ import com.android.settingslib.core.lifecycle.LifecycleObserver;
 import com.android.settingslib.core.lifecycle.events.OnResume;
 import com.android.settingslib.development.DevelopmentSettingsEnabler;
 
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IDeviceInfoSettingsExt;
+
 public class BuildNumberPreferenceController extends AbstractPreferenceController implements
         PreferenceControllerMixin, LifecycleObserver, OnResume {
 
@@ -64,6 +67,7 @@ public class BuildNumberPreferenceController extends AbstractPreferenceControlle
     private boolean mDebuggingFeaturesDisallowedBySystem;
     private int mDevHitCountdown;
     private boolean mProcessingLastDevHit;
+    private IDeviceInfoSettingsExt mExt;
 
     public BuildNumberPreferenceController(Context context, Activity activity, Fragment fragment,
             Lifecycle lifecycle) {
@@ -75,6 +79,7 @@ public class BuildNumberPreferenceController extends AbstractPreferenceControlle
         if (lifecycle != null) {
             lifecycle.addObserver(this);
         }
+        mExt = UtilsExt.getDeviceInfoSettingsExt(mActivity);
     }
 
     @Override
@@ -85,6 +90,8 @@ public class BuildNumberPreferenceController extends AbstractPreferenceControlle
             try {
                 preference.setSummary(BidiFormatter.getInstance().unicodeWrap(Build.DISPLAY));
                 preference.setEnabled(true);
+                mExt.updateSummary(preference, Build.DISPLAY,
+                        mContext.getString(R.string.device_info_default));
             } catch (Exception e) {
                 preference.setSummary(R.string.device_info_default);
             }

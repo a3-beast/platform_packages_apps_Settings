@@ -169,6 +169,7 @@ public class RingtonePreference extends Preference {
         ringtonePickerIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, getTitle());
         ringtonePickerIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_AUDIO_ATTRIBUTES_FLAGS,
                 AudioAttributes.FLAG_BYPASS_INTERRUPTION_POLICY);
+        ringtonePickerIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
     }
 
     /**

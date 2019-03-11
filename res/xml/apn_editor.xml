@@ -24,12 +24,14 @@
         android:inputType="text"
         android:persistent="false"
         />
+    <!-- M: add length limit -->
     <EditTextPreference
         android:title="@string/apn_apn"
         android:dialogTitle="@string/apn_apn"
         android:key="apn_apn"
         android:singleLine="true"
         android:inputType="textEmailAddress"
+        android:maxLength="64"
         android:persistent="false"
         />
     <EditTextPreference
@@ -40,28 +42,34 @@
         android:inputType="textUri"
         android:persistent="false"
         />
+    <!-- M: add length limit -->
     <EditTextPreference
         android:title="@string/apn_http_port"
         android:dialogTitle="@string/apn_http_port"
         android:key="apn_http_port"
         android:singleLine="true"
         android:inputType="number"
+        android:maxLength="5"
         android:persistent="false"
         />
+    <!-- M: add length limit -->
     <EditTextPreference
         android:title="@string/apn_user"
         android:dialogTitle="@string/apn_user"
         android:key="apn_user"
         android:singleLine="true"
         android:inputType="textEmailAddress"
+        android:maxLength="32"
         android:persistent="false"
         />
+    <!-- M: add length limit -->
     <EditTextPreference
         android:title="@string/apn_password"
         android:dialogTitle="@string/apn_password"
         android:key="apn_password"
         android:singleLine="true"
         android:inputType="textPassword"
+        android:maxLength="32"
         android:persistent="false"
         />
     <EditTextPreference
@@ -88,12 +96,14 @@
         android:inputType="textUri"
         android:persistent="false"
         />
+    <!-- M: add length limit -->
     <EditTextPreference
         android:title="@string/apn_mms_port"
         android:dialogTitle="@string/apn_mms_port"
         android:key="apn_mms_port"
         android:singleLine="true"
         android:inputType="number"
+        android:maxLength="5"
         android:persistent="false"
         />
     <EditTextPreference
@@ -159,11 +169,12 @@
         android:persistent="false"
         style="@style/SettingsMultiSelectListPreference"
         />
+    <!-- M: add PNN type  -->
     <ListPreference
         android:title="@string/mvno_type"
         android:key="mvno_type"
-        android:entries="@array/mvno_type_entries"
-        android:entryValues="@array/mvno_type_values"
+        android:entries="@array/ext_mvno_type_entries"
+        android:entryValues="@array/ext_mvno_type_values"
         android:persistent="false"
         />
     <EditTextPreference

@@ -35,5 +35,7 @@
         android:fontFamily="sans-serif"
         android:textColor="#FFFFFF"
         style="?android:attr/borderlessButtonStyle" />
+    <View android:layout_width="match_parent"
+        android:layout_height="72dp"/>
 
 </LinearLayout>

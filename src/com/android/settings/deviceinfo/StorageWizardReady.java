@@ -17,12 +17,19 @@
 package com.android.settings.deviceinfo;
 
 import android.os.Bundle;
+import android.os.storage.StorageEventListener;
 import android.os.storage.VolumeInfo;
+
+import android.util.Log;
 import android.view.View;
 
 import com.android.settings.R;
 
+import java.util.Objects;
+
 public class StorageWizardReady extends StorageWizardBase {
+
+    private static final String TAG = "StorageWizardReady";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,10 +57,34 @@ public class StorageWizardReady extends StorageWizardBase {
         }
 
         setNextButtonText(R.string.done);
+        /// M:
+        mStorage.registerListener(mStorageMountListener);
     }
 
     @Override
     public void onNavigateNext(View view) {
         finishAffinity();
     }
+
+    /// M: ALPS02300202, add StorageEventListenner to update UI @{
+    private final StorageEventListener mStorageMountListener = new StorageEventListener() {
+        @Override
+        public void onVolumeStateChanged(VolumeInfo vol, int oldState, int newState) {
+            Log.d(TAG, "onVolumeStateChanged, disk : " + vol.getDiskId()
+                    + ", type : " + vol.getType() + ", state : " + vol.getState());
+            if (Objects.equals(mDisk.getId(), vol.getDiskId())
+                    && (vol.getType() == VolumeInfo.TYPE_PUBLIC)
+                    && (newState == VolumeInfo.STATE_MOUNTED)) {
+                setBodyText(R.string.storage_wizard_ready_v2_external_body,
+                        mDisk.getDescription());
+            }
+        }
+    };
+
+    @Override
+    protected void onDestroy() {
+        mStorage.unregisterListener(mStorageMountListener);
+        super.onDestroy();
+    }
+    /// }@
 }

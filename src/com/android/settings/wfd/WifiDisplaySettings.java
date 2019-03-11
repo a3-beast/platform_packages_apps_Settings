@@ -66,6 +66,8 @@ import com.android.settings.SettingsPreferenceFragment;
 import com.android.settings.dashboard.SummaryLoader;
 import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
+import com.mediatek.settings.FeatureOption;
+import com.mediatek.settings.wfd.WfdChangeResolution;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,6 +120,9 @@ public final class WifiDisplaySettings extends SettingsPreferenceFragment implem
     private int mListenChannel;
     private int mOperatingChannel;
 
+    /// M: Add for wfd change resolution
+    private WfdChangeResolution mWfdChangeResolution;
+
     public WifiDisplaySettings() {
         mHandler = new Handler();
     }
@@ -130,6 +135,12 @@ public final class WifiDisplaySettings extends SettingsPreferenceFragment implem
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+
+        /// M: new mWfdChangeResolution for MTK WFD feature @{
+        if (FeatureOption.MTK_WFD_SUPPORT) {
+            mWfdChangeResolution = new WfdChangeResolution(getActivity());
+        }
+        /// M: @}
 
         final Context context = getActivity();
         mRouter = (MediaRouter) context.getSystemService(Context.MEDIA_ROUTER_SERVICE);
@@ -202,6 +213,12 @@ public final class WifiDisplaySettings extends SettingsPreferenceFragment implem
             item.setCheckable(true);
             item.setChecked(mWifiDisplayOnSetting);
         }
+
+        /// M: Call WfdChangeResolution create option menu function @{
+        if (mWfdChangeResolution != null) {
+            mWfdChangeResolution.onCreateOptionMenu(menu, mWifiDisplayStatus);
+        }
+        /// M: @}
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -215,7 +232,16 @@ public final class WifiDisplaySettings extends SettingsPreferenceFragment implem
                         Settings.Global.WIFI_DISPLAY_ON, mWifiDisplayOnSetting ? 1 : 0);
                 return true;
         }
-        return super.onOptionsItemSelected(item);
+
+        /// M: Call WfdChangeResolution option menu selected function @{
+        if (mWfdChangeResolution != null &&
+                mWfdChangeResolution.onOptionMenuSelected(item, getFragmentManager())) {
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+        /// M: @}
+
     }
 
     public static boolean isAvailable(Context context) {

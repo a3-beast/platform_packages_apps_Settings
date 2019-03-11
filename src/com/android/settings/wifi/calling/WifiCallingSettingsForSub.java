@@ -23,12 +23,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+/// M: Add for checking if package exists or not.
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.Preference.OnPreferenceClickListener;
 import android.support.v7.preference.PreferenceScreen;
+/// M: Add for checking if phone is in call.
+import android.telecom.TelecomManager;
 import android.telephony.CarrierConfigManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.SubscriptionManager;
@@ -40,8 +44,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Switch;
 import android.widget.TextView;
+/// M: Add for checking if IMS is switching or not.
+import android.widget.Toast;
 
 import com.android.ims.ImsConfig;
+/// M: Add for checking if IMS is switching or not.
+import com.android.ims.ImsException;
 import com.android.ims.ImsManager;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.telephony.Phone;
@@ -50,6 +58,23 @@ import com.android.settings.SettingsActivity;
 import com.android.settings.SettingsPreferenceFragment;
 import com.android.settings.Utils;
 import com.android.settings.widget.SwitchBar;
+
+/// M: Add for checking IMS state. @{
+import com.mediatek.ims.internal.MtkImsManagerEx;
+import com.mediatek.internal.telephony.MtkPhoneConstants;
+/// @}
+/// M: Add for WFC plugin. @{
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.DefaultWfcSettingsExt;
+import com.mediatek.settings.ext.IWfcSettingsExt;
+/// @}
+/// M: Add for supporting SIM hot swap. @{
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+/// @}
+
+/// M: Add for checking carrier config.
+import mediatek.telephony.MtkCarrierConfigManager;
 
 /**
  * This is the inner class of {@link WifiCallingSettings} fragment.
@@ -88,6 +113,17 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
 
     private int mSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     private ImsManager mImsManager;
+
+    /// M: Add for checking carrier config.
+    private boolean mRemoveWfcPreferenceMode;
+    /// M: Add for WFC plugin.
+    IWfcSettingsExt mWfcExt;
+    /// M: Add for ALPS03044866, should not show the dialog every time Activity resumed
+    private boolean mAlertAlreadyShowed = false;
+    /// M: Add for supporting SIM hot swap.
+    private SimHotSwapHandler mSimHotSwapHandler;
+    /// M: Create TelephonyManager for the specified subId.
+    private TelephonyManager mTelephonyManager;
 
     private final PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
         /*
@@ -194,6 +230,7 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            Log.d(TAG, "onReceive, action=" + action);
             if (action.equals(ImsManager.ACTION_IMS_REGISTRATION_ERROR)) {
                 // If this fragment is active then we are immediately
                 // showing alert on screen. There is no need to add
@@ -204,7 +241,19 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
                 setResultCode(Activity.RESULT_CANCELED);
 
                 showAlert(intent);
+            /// M: Listen to WFC config changes and update the screen. @{
+            } else if (action.equals(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED)) {
+                int phoneId = intent.getIntExtra(CarrierConfigManager.EXTRA_SLOT_INDEX,
+                        SubscriptionManager.INVALID_SIM_SLOT_INDEX);
+                int currentPhoneId = SubscriptionManager.getPhoneId(mSubId);
+                if (phoneId != SubscriptionManager.INVALID_SIM_SLOT_INDEX
+                        && phoneId == currentPhoneId
+                        && !mImsManager.isWfcEnabledByPlatform()) {
+                    Log.d(TAG, "Carrier config changed, finish WFC activity");
+                    getActivity().finish();
+                }
             }
+            /// @}
         }
     };
 
@@ -224,6 +273,11 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         super.onCreate(savedInstanceState);
 
         addPreferencesFromResource(R.xml.wifi_calling_settings);
+
+        /// M: Add for WFC plugin. @{
+        mWfcExt = UtilsExt.getWfcSettingsExt(getActivity());
+        mWfcExt.initPlugin(this);
+        /// @}
 
         // SubId should always be specified when creating this fragment. Either through
         // fragment.setArguments() or through savedInstanceState.
@@ -246,8 +300,31 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         mUpdateAddress = (Preference) findPreference(PREFERENCE_EMERGENCY_ADDRESS);
         mUpdateAddress.setOnPreferenceClickListener(mUpdateAddressListener);
 
+        /// M: Add for WFC plugin.
+        mWfcExt.addOtherCustomPreference();
+
         mIntentFilter = new IntentFilter();
         mIntentFilter.addAction(ImsManager.ACTION_IMS_REGISTRATION_ERROR);
+        /// M: Listen to Carrier config changes
+        mIntentFilter.addAction(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
+
+        /// M: Create TelephonyManager for the specified subId. @{
+        mTelephonyManager = TelephonyManager.from(getActivity())
+                .createForSubscriptionId(mSubId);
+        /// @}
+
+        /// M: Add for supporting SIM hot swap. @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getActivity());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                Log.d(TAG, "onSimHotSwap, finish Activity.");
+                getActivity().finish();
+            }
+        });
+
+        /// M: Add for WFC plugin.
+        mWfcExt.onWfcSettingsEvent(DefaultWfcSettingsExt.CREATE);
     }
 
     @Override
@@ -276,6 +353,9 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
                 getSystemService(Context.CARRIER_CONFIG_SERVICE);
         boolean isWifiOnlySupported = true;
 
+        /// M: WFC TTY feature for operator
+        boolean disableWifiCalling = false;
+
         if (configManager != null) {
             PersistableBundle b = configManager.getConfigForSubId(mSubId);
             if (b != null) {
@@ -285,6 +365,14 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
                         CarrierConfigManager.KEY_EDITABLE_WFC_ROAMING_MODE_BOOL);
                 isWifiOnlySupported = b.getBoolean(
                         CarrierConfigManager.KEY_CARRIER_WFC_SUPPORTS_WIFI_ONLY_BOOL, true);
+                /// M: Add for checking carrier config. @{
+                mRemoveWfcPreferenceMode = b.getBoolean(
+                        MtkCarrierConfigManager.MTK_KEY_WFC_REMOVE_PREFERENCE_MODE_BOOL, false);
+                Log.d(TAG, "updateBody, removeWfcPreferenceMode=" + mRemoveWfcPreferenceMode);
+                disableWifiCalling = b.getBoolean(
+                        MtkCarrierConfigManager.MTK_KEY_UPDATE_WIFICALLING_BY_TTY, false);
+                Log.d(TAG, "[TTY]WFC disableWifiCalling" + disableWifiCalling);
+                /// @}
             }
         }
 
@@ -307,20 +395,40 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         mButtonWfcMode.setValue(Integer.toString(wfcMode));
         mButtonWfcRoamingMode.setValue(Integer.toString(wfcRoamingMode));
         updateButtonWfcMode(wfcEnabled, wfcMode, wfcRoamingMode);
+
+        /// M: Update enable state.
+        updateEnabledState();
+
+       /// M: WFC TTY feature for operator @{
+        boolean isNonTtyOrTtyOnVolteEnabled = mImsManager.isNonTtyOrTtyOnVolteEnabled();
+        Log.d(TAG, "[TTY]isNonTtyOrTtyOnVolteEnabled :" + isNonTtyOrTtyOnVolteEnabled
+                    + " wfcEnabled :" + wfcEnabled);
+        if (!isNonTtyOrTtyOnVolteEnabled && disableWifiCalling && !wfcEnabled) {
+            Context context = getActivity();
+            String disableWifiCallingMessage = context.getString(
+                        R.string.tty_wfc_disable_wfc_setting_message);
+            Toast.makeText(context, disableWifiCallingMessage, Toast.LENGTH_LONG).show();
+        }
+        /// @}
+
+        /// M: Add for WFC plugin. @{
+        mWfcExt.updateWfcModePreference(
+                getPreferenceScreen(), mButtonWfcMode, wfcEnabled, wfcMode);
+        /// @}
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume");
 
         final Context context = getActivity();
 
         updateBody();
 
         if (mImsManager.isWfcEnabledByPlatform()) {
-            TelephonyManager tm =
-                    (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            tm.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+            /// M: Listen phone state with specified TelephonyManager.
+            mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
             mSwitchBar.addOnSwitchChangeListener(this);
 
@@ -330,9 +438,15 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         context.registerReceiver(mIntentReceiver, mIntentFilter);
 
         Intent intent = getActivity().getIntent();
-        if (intent.getBooleanExtra(Phone.EXTRA_KEY_ALERT_SHOW, false)) {
+        /// M: Add for ALPS03044866, should not show the dialog every time Activity resumed @{
+        if (intent.getBooleanExtra(Phone.EXTRA_KEY_ALERT_SHOW, false) && !mAlertAlreadyShowed) {
             showAlert(intent);
+            mAlertAlreadyShowed = true;
         }
+        /// @}
+
+        /// M: Add for WFC plugin.
+        mWfcExt.onWfcSettingsEvent(DefaultWfcSettingsExt.RESUME);
     }
 
     @Override
@@ -344,13 +458,26 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         if (mValidListener) {
             mValidListener = false;
 
-            TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            tm.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
+            /// M: Listen phone state with specified TelephonyManager.
+            mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
 
             mSwitchBar.removeOnSwitchChangeListener(this);
         }
 
         context.unregisterReceiver(mIntentReceiver);
+
+        /// M: Add for WFC plugin.
+        mWfcExt.onWfcSettingsEvent(DefaultWfcSettingsExt.PAUSE);
+    }
+
+    @Override
+    public void onDestroy() {
+        /// M: Add for supporting SIM hot swap.
+        mSimHotSwapHandler.unregisterOnSimHotSwap();
+        /// M: Add for WFC plugin.
+        mWfcExt.onWfcSettingsEvent(DefaultWfcSettingsExt.DESTROY);
+
+        super.onDestroy();
     }
 
     /**
@@ -359,6 +486,17 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
     @Override
     public void onSwitchChanged(Switch switchView, boolean isChecked) {
         Log.d(TAG, "onSwitchChanged(" + isChecked + ")");
+
+        /// M: Check whether wfc switch is to be toggled or not. @{
+        // Revert user action with toast when IMS is enabling or disabling.
+        if (isInSwitchProcess()) {
+            Log.d(TAG, "onSwitchChanged, switching process is ongoing.");
+            Toast.makeText(getActivity(), R.string.Switch_not_in_use_string,
+                    Toast.LENGTH_SHORT).show();
+            mSwitchBar.setChecked(!isChecked);
+            return;
+        }
+        /// @}
 
         if (!isChecked) {
             updateWfcMode(false);
@@ -395,6 +533,12 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         ComponentName componentName = ComponentName.unflattenFromString(carrierApp);
         if (componentName == null) return null;
 
+        /// M: Check if component is registered with Package Manager or not. @{
+        if (!isPackageExist(getActivity(), componentName)) {
+            return null;
+        }
+        /// @}
+
         // Build and return intent
         Intent intent = new Intent();
         intent.setComponent(componentName);
@@ -411,6 +555,12 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         int wfcMode = mImsManager.getWfcMode(false);
         int wfcRoamingMode = mImsManager.getWfcMode(true);
         updateButtonWfcMode(wfcEnabled, wfcMode, wfcRoamingMode);
+
+        /// M: Add for WFC plugin. @{
+        mWfcExt.updateWfcModePreference(
+                getPreferenceScreen(), mButtonWfcMode, wfcEnabled, wfcMode);
+        /// @}
+
         if (wfcEnabled) {
             mMetricsFeatureProvider.action(getActivity(), getMetricsCategory(), wfcMode);
         } else {
@@ -435,6 +585,7 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
 
     private void updateButtonWfcMode(boolean wfcEnabled,
             int wfcMode, int wfcRoamingMode) {
+        Log.d(TAG, "updateButtonWfcMode, wfcEnabled=" + wfcEnabled);
         mButtonWfcMode.setSummary(getWfcModeSummary(wfcMode));
         mButtonWfcMode.setEnabled(wfcEnabled && mEditableWfcMode);
         // mButtonWfcRoamingMode.setSummary is not needed; summary is just selected value.
@@ -460,6 +611,11 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
             } else {
                 preferenceScreen.removePreference(mUpdateAddress);
             }
+            /// M: Add for checking carrier config. @{
+            if (mRemoveWfcPreferenceMode) {
+                preferenceScreen.removePreference(mButtonWfcMode);
+            }
+            /// @}
         } else {
             preferenceScreen.removePreference(mButtonWfcMode);
             preferenceScreen.removePreference(mButtonWfcRoamingMode);
@@ -500,6 +656,7 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
     }
 
     private int getWfcModeSummary(int wfcMode) {
+        Log.d(TAG, "getWfcModeSummary, wfcMode=" + wfcMode);
         int resId = com.android.internal.R.string.wifi_calling_off_summary;
         if (mImsManager.isWfcEnabledByUser()) {
             switch (wfcMode) {
@@ -518,4 +675,44 @@ public class WifiCallingSettingsForSub extends SettingsPreferenceFragment
         }
         return resId;
     }
+
+    /// M: Check if the IMS is enabling or disabling. @{
+    private boolean isInSwitchProcess() {
+        int imsState = MtkPhoneConstants.IMS_STATE_DISABLED;
+        try {
+            imsState = MtkImsManagerEx.getInstance().getImsState(
+                    SubscriptionManager.getPhoneId(mSubId));
+        } catch (ImsException e) {
+            return false;
+        }
+        Log.d(TAG, "isInSwitchProcess, imsState=" + imsState);
+        return imsState == MtkPhoneConstants.IMS_STATE_DISABLING
+                || imsState == MtkPhoneConstants.IMS_STATE_ENABLING;
+    }
+    /// @}
+
+    /// M: Update enable state. @{
+    private void updateEnabledState() {
+        boolean isInCall = TelecomManager.from(getActivity()).isInCall();
+        Log.d(TAG, "updateEnabledState, inCall=" + isInCall);
+        if (isInCall) {
+            mSwitchBar.setEnabled(false);
+            mButtonWfcMode.setEnabled(false);
+            mButtonWfcRoamingMode.setEnabled(false);
+        }
+    }
+    /// @}
+
+    /// M: check if component registered with Package Manager.
+    private static boolean isPackageExist(Context context, ComponentName componentName) {
+        try {
+            context.getPackageManager().getActivityInfo(componentName, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.d(TAG, "package does not exist.");
+            return false;
+        }
+        Log.d(TAG, "package exists.");
+        return true;
+    }
+    /// @}
 }

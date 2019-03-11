@@ -28,6 +28,7 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.mediatek.settings.system.DrmResetPreferenceController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +63,9 @@ public class ResetDashboardFragment extends DashboardFragment {
         controllers.add(new NetworkResetPreferenceController(context));
         controllers.add(new FactoryResetPreferenceController(context));
         controllers.add(new ResetAppPrefPreferenceController(context, lifecycle));
+        /// M: add the DRM reset feature @{
+        controllers.add(new DrmResetPreferenceController(context));
+        /// @}
         return controllers;
     }
 

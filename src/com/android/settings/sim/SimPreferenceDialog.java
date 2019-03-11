@@ -17,8 +17,14 @@ package com.android.settings.sim;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+/// M: Record the dialog to dismiss it when activity destroyed.
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+/// M: Dismis the dialog when receiving back key or cancel event. @{
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnKeyListener;
+/// @}
 import android.content.res.Resources;
 import android.graphics.Paint;
 import android.graphics.drawable.ShapeDrawable;
@@ -29,6 +35,9 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
+/// M: Dismiss the dialog when receiving back key or cancel event.
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +51,18 @@ import android.widget.TextView;
 import com.android.settings.R;
 import com.android.settings.Utils;
 
+/// M: Add for SIM settings plugin.
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.ISimManagementExt;
+/// @}
+/// M: Add for supporting SIM hot swap. @{
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+/// @}
+
 public class SimPreferenceDialog extends Activity {
+
+    private static final String TAG = "SimPreferenceDialog";
 
     private Context mContext;
     private SubscriptionInfo mSubInfoRecord;
@@ -56,6 +76,15 @@ public class SimPreferenceDialog extends Activity {
     private final String SIM_NAME = "sim_name";
     private final String TINT_POS = "tint_pos";
 
+    /// M: Add for SIM settings plugin.
+    private ISimManagementExt mSimManagementExt;
+
+    /// M: Add for supporting SIM hot swap.
+    private SimHotSwapHandler mSimHotSwapHandler;
+
+    /// M: Record the dialog to dismiss it when activity destroyed.
+    private Dialog mDialog;
+
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
@@ -64,6 +93,15 @@ public class SimPreferenceDialog extends Activity {
         mSlotId = extras.getInt(SimSettings.EXTRA_SLOT_ID, -1);
         mSubscriptionManager = SubscriptionManager.from(mContext);
         mSubInfoRecord = mSubscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(mSlotId);
+
+        /// M: For ALPS02368883, the sub info may be null when hot swap happened. @{
+        if (mSubInfoRecord == null) {
+            Log.w(TAG, "Sub info record is null, finish the activity.");
+            finish();
+            return;
+        }
+        /// @}
+
         mTintArr = mContext.getResources().getIntArray(com.android.internal.R.array.sim_colors);
         mColorStrings = mContext.getResources().getStringArray(R.array.color_picker);
         mTintSelectorPos = 0;
@@ -74,7 +112,21 @@ public class SimPreferenceDialog extends Activity {
         mDialogLayout = inflater.inflate(R.layout.multi_sim_dialog, null);
         mBuilder.setView(mDialogLayout);
 
+        /// Add for SIM settings plugin.
+        mSimManagementExt = UtilsExt.getSimManagementExt(getApplicationContext());
+
         createEditDialog(bundle);
+
+        /// M: Add for supporting SIM hot swap. @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getApplicationContext());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                Log.d(TAG, "onSimHotSwap, finish Activity.");
+                finish();
+            }
+        });
+        /// @}
     }
 
     @Override
@@ -179,6 +231,26 @@ public class SimPreferenceDialog extends Activity {
             }
         });
 
+        /// M: Dismiss the dialo when receiving back key or cancel event. @{
+        mBuilder.setOnKeyListener(new OnKeyListener() {
+            @Override
+            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                if (keyCode == KeyEvent.KEYCODE_BACK) {
+                    dialog.dismiss();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        mBuilder.setOnCancelListener(new OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                dialog.dismiss();
+            }
+        });
+        /// @}
+
         mBuilder.setOnDismissListener(new DialogInterface.OnDismissListener() {
            @Override
            public void onDismiss(DialogInterface dialogInListener) {
@@ -186,7 +258,13 @@ public class SimPreferenceDialog extends Activity {
            }
         });
 
-        mBuilder.create().show();
+        /// M: Add for SIM settings plugin.
+        mSimManagementExt.hideSimEditorView(mDialogLayout, mContext);
+
+        /// M: Record the dialog to dismiss it when activity destroyed. @{
+        mDialog = mBuilder.create();
+        mDialog.show();
+        /// @}
     }
 
     private class SelectColorAdapter extends ArrayAdapter<CharSequence> {
@@ -256,4 +334,22 @@ public class SimPreferenceDialog extends Activity {
             ShapeDrawable swatch;
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        /// M: Dismiss the dialog when activity destroyed. @{
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+            mDialog = null;
+        }
+        /// @}
+
+        /// M: Add for supporting SIM hot swap. @{
+        if (mSimHotSwapHandler != null) {
+            mSimHotSwapHandler.unregisterOnSimHotSwap();
+        }
+        /// @}
+
+        super.onDestroy();
+    };
 }

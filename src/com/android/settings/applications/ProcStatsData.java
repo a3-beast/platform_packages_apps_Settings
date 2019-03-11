@@ -407,7 +407,8 @@ public class ProcStatsData {
             ((ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryInfo(
                     memInfo);
             if (memInfo.hiddenAppThreshold >= realFreeRam) {
-                realUsedRam = freeRam;
+                /// M: ALPS02582811 fix memory used memory show wrong value.
+                realUsedRam += realFreeRam;
                 realFreeRam = 0;
                 baseCacheRam = (long) realFreeRam;
             } else {

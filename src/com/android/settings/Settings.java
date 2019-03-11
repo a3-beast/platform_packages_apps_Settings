@@ -16,8 +16,10 @@
 
 package com.android.settings;
 
+import android.content.Intent;
 import android.os.Bundle;
 
+import com.android.settings.network.ApnSettings;
 import com.android.settings.enterprise.EnterprisePrivacySettings;
 
 /**
@@ -32,7 +34,6 @@ public class Settings extends SettingsActivity {
     public static class BluetoothSettingsActivity extends SettingsActivity { /* empty */ }
     public static class SimSettingsActivity extends SettingsActivity { /* empty */ }
     public static class TetherSettingsActivity extends SettingsActivity { /* empty */ }
-    public static class WifiTetherSettingsActivity extends SettingsActivity { /* empty */ }
     public static class VpnSettingsActivity extends SettingsActivity { /* empty */ }
     public static class DateTimeSettingsActivity extends SettingsActivity { /* empty */ }
     public static class PrivateVolumeForgetActivity extends SettingsActivity { /* empty */ }
@@ -122,7 +123,16 @@ public class Settings extends SettingsActivity {
     public static class DirectoryAccessSettingsActivity extends SettingsActivity { /* empty */ }
 
     public static class TopLevelSettings extends SettingsActivity { /* empty */ }
-    public static class ApnSettingsActivity extends SettingsActivity { /* empty */ }
+    public static class ApnSettingsActivity extends SettingsActivity {
+        @Override
+        protected void onNewIntent(Intent intent) {
+            ApnSettings fragment = (ApnSettings) getFragmentManager()
+                    .findFragmentById(R.id.main_content);
+            if (fragment != null) {
+                fragment.onIntentUpdate(intent);
+            }
+        }
+    }
     public static class WifiCallingSettingsActivity extends SettingsActivity { /* empty */ }
     public static class MemorySettingsActivity extends SettingsActivity { /* empty */ }
     public static class AppMemoryUsageActivity extends SettingsActivity { /* empty */ }
@@ -166,4 +176,39 @@ public class Settings extends SettingsActivity {
     public static class AccountDashboardActivity extends SettingsActivity {}
     public static class SystemDashboardActivity extends SettingsActivity {}
 
+    /**
+     * M: HDMI setting activity.
+     */
+    public static class HdmiSettingsActivity extends SettingsActivity { /* empty */ }
+
+    /**
+      * M: DRM reset setting activity.
+      */
+    public static class DrmResetActivity extends SettingsActivity { /* empty */ }
+
+    /**
+     * M: NFC addon setting activity.
+     */
+    public static class NfcSettingsActivity extends SettingsActivity { /*empty */ }
+
+    /**
+     * M: NFC service status setting activity.
+     */
+    public static class NfcServiceStatusActivity extends SettingsActivity { /*empty */ }
+
+    /**
+     * M: SmartCallFwd setting activity.
+     */
+    public static class SmartCallFwdActivity extends SettingsActivity { /* empty */ }
+    /**@}*/
+
+    /**
+     * M: Advanced Calling Options activity.
+     */
+    public static class AdvancedCallingOptionsActivity extends SettingsActivity { /* empty */ }
+
+    /**
+     * M: Advanced Wifi Calling activity.
+     */
+    public static class AdvancedWifiCallingActivity extends SettingsActivity { /* empty */ }
 }

@@ -28,6 +28,8 @@ import com.android.settings.backup.BackupSettingsActivityPreferenceController;
 import com.android.settings.dashboard.DashboardFragment;
 import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IDeviceInfoSettingsExt;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +40,7 @@ public class SystemDashboardFragment extends DashboardFragment {
 
     private static final String KEY_RESET = "reset_dashboard";
 
+    private static IDeviceInfoSettingsExt mExt;
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -47,6 +50,7 @@ public class SystemDashboardFragment extends DashboardFragment {
         if (getVisiblePreferenceCount(screen) == screen.getInitialExpandedChildrenCount() + 1) {
             screen.setInitialExpandedChildrenCount(Integer.MAX_VALUE);
         }
+        mExt = UtilsExt.getDeviceInfoSettingsExt(getActivity());
     }
 
     @Override

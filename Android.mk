@@ -4,14 +4,15 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := \
         $(call all-logtags-files-under, src)
 
-LOCAL_MODULE := settings-logtags
+LOCAL_MODULE := mtksettings-logtags
 
 include $(BUILD_STATIC_JAVA_LIBRARY)
 
 # Build the Settings APK
 include $(CLEAR_VARS)
 
-LOCAL_PACKAGE_NAME := Settings
+LOCAL_PACKAGE_NAME := MtkSettings
+LOCAL_OVERRIDES_PACKAGES := Settings
 LOCAL_PRIVATE_PLATFORM_APIS := true
 LOCAL_CERTIFICATE := platform
 LOCAL_PRIVILEGED_MODULE := true
@@ -19,6 +20,9 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_USE_AAPT2 := true
 
 LOCAL_SRC_FILES := $(call all-java-files-under, src)
+
+LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res
+LOCAL_RESOURCE_DIR += $(LOCAL_PATH)/res_ext
 
 LOCAL_STATIC_ANDROID_LIBRARIES := \
     android-slices-builders \
@@ -36,14 +40,28 @@ LOCAL_STATIC_ANDROID_LIBRARIES := \
 LOCAL_JAVA_LIBRARIES := \
     bouncycastle \
     telephony-common \
-    ims-common
+    ims-common \
+    mediatek-framework \
+    mediatek-common \
+    mediatek-telephony-common \
+    mediatek-telephony-base \
+    mediatek-ims-common
 
 LOCAL_STATIC_JAVA_LIBRARIES := \
     android-arch-lifecycle-runtime \
     android-arch-lifecycle-extensions \
     guava \
     jsr305 \
-    settings-logtags \
+    mtksettings-logtags \
+    com.mediatek.lbs.em2.utils \
+    com.mediatek.settings.ext \
+    nfc_settings_adapter \
+
+ifeq ($(strip $(MTK_HDMI_SUPPORT)), yes)
+ifeq ($(MTK_PLATFORM),$(filter $(MTK_PLATFORM),MT8173 MT8167 MT6735 MT8163 MT6771))
+LOCAL_JAVA_LIBRARIES += hdmimanager
+endif
+endif
 
 LOCAL_PROGUARD_FLAG_FILES := proguard.flags
 
@@ -54,7 +72,7 @@ ifneq ($(INCREMENTAL_BUILDS),)
 endif
 
 include frameworks/opt/setupwizard/library/common-gingerbread.mk
-include frameworks/base/packages/SettingsLib/common.mk
+include vendor/mediatek/proprietary/packages/apps/SettingsLib/common.mk
 
 include $(BUILD_PACKAGE)
 

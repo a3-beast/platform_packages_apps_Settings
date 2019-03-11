@@ -21,15 +21,26 @@ import com.android.settings.R;
 import com.android.settings.accessibility.ToggleFontSizePreferenceFragment;
 import com.android.settings.core.BasePreferenceController;
 
+import com.mediatek.settings.ext.IDisplaySettingsExt;
+import com.mediatek.settings.UtilsExt;
+
 public class FontSizePreferenceController extends BasePreferenceController {
+
+    private IDisplaySettingsExt customFontSizePref;
+    private Context mContext;
 
     public FontSizePreferenceController(Context context, String key) {
         super(context, key);
+        mContext = context;
     }
 
     @Override
     public int getAvailabilityStatus() {
-        return AVAILABLE;
+        customFontSizePref = UtilsExt.getDisplaySettingsExt(mContext);
+        if(!customFontSizePref.isCustomPrefPresent()) {
+            return AVAILABLE;
+        }
+        return UNSUPPORTED_ON_DEVICE;
     }
 
     @Override

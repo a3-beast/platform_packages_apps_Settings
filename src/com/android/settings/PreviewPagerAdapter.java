@@ -114,15 +114,15 @@ public class PreviewPagerAdapter extends PagerAdapter {
         return (view == object);
     }
 
-    boolean isAnimating() {
+    public boolean isAnimating() {
         return mAnimationCounter > 0;
     }
 
-    void setAnimationEndAction(Runnable action) {
+    public void setAnimationEndAction(Runnable action) {
         mAnimationEndAction = action;
     }
 
-    void setPreviewLayer(int newLayerIndex, int currentLayerIndex, int currentFrameIndex,
+    public void setPreviewLayer(int newLayerIndex, int currentLayerIndex, int currentFrameIndex,
             final boolean animate) {
         for (FrameLayout previewFrame : mPreviewFrames) {
             if (currentLayerIndex >= 0) {

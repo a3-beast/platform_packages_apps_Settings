@@ -29,6 +29,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.support.annotation.VisibleForTesting;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
@@ -37,11 +38,19 @@ import com.android.settings.widget.SwitchWidgetController;
 import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 import com.android.settingslib.WirelessUtils;
+
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IWifiSettingsExt;
+
 import com.android.settingslib.core.instrumentation.MetricsFeatureProvider;
+
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListener  {
+
+    /// M: Add for debug log
+    private static final String TAG = "WifiEnabler";
 
     private final SwitchWidgetController mSwitchWidget;
     private final WifiManager mWifiManager;
@@ -51,13 +60,18 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
     private Context mContext;
     private boolean mListeningToOnSwitchChange = false;
     private AtomicBoolean mConnected = new AtomicBoolean(false);
-
+    private IWifiSettingsExt mWifiSettingsExt;
 
     private boolean mStateMachineEvent;
     private final IntentFilter mIntentFilter;
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            /// M: [ALPS04163925] Wifi Manager could be null when device encrypted @{
+            if (mWifiManager == null) {
+                return;
+            }
+            /// @}
             String action = intent.getAction();
             if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(action)) {
                 handleWifiStateChanged(mWifiManager.getWifiState());
@@ -99,12 +113,14 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
         // The order matters! We really should not depend on this. :(
         mIntentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
         mIntentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        mWifiSettingsExt = UtilsExt.getWifiSettingsExt(mContext);
 
         setupSwitchController();
     }
 
     public void setupSwitchController() {
-        final int state = mWifiManager.getWifiState();
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        final int state = (mWifiManager == null) ? -1 : mWifiManager.getWifiState();
         handleWifiStateChanged(state);
         if (!mListeningToOnSwitchChange) {
             mSwitchWidget.startListening();
@@ -140,6 +156,8 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
     }
 
     private void handleWifiStateChanged(int state) {
+        /// M: Add debug log
+        Log.d(TAG, "handleWifiStateChanged, state = " + state);
         // Clear any previous state
         mSwitchWidget.setDisabledByAdmin(null);
 
@@ -174,6 +192,9 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
     private void setSwitchBarChecked(boolean checked) {
         mStateMachineEvent = true;
         mSwitchWidget.setChecked(checked);
+        /// M: For CMCC feature: fresh button update @{
+        mWifiSettingsExt.customRefreshButtonStatus(checked);
+        /// @}
         mStateMachineEvent = false;
     }
 
@@ -204,6 +225,9 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
             Toast.makeText(mContext, R.string.wifi_in_airplane_mode, Toast.LENGTH_SHORT).show();
             // Reset switch to off. No infinite check/listener loop.
             mSwitchWidget.setChecked(false);
+            /// M: For CMCC feature: fresh button update @{
+            mWifiSettingsExt.customRefreshButtonStatus(false);
+            /// @}
             return false;
         }
 
@@ -214,7 +238,10 @@ public class WifiEnabler implements SwitchWidgetController.OnSwitchChangeListene
             mMetricsFeatureProvider.action(mContext, MetricsEvent.ACTION_WIFI_OFF,
                     mConnected.get());
         }
-        if (!mWifiManager.setWifiEnabled(isChecked)) {
+        /// M: Add debug log
+        Log.d(TAG, "onSwitchToggled11, isChecked = " + isChecked);
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null || !mWifiManager.setWifiEnabled(isChecked)) {
             // Error
             mSwitchWidget.setEnabled(true);
             Toast.makeText(mContext, R.string.wifi_error, Toast.LENGTH_SHORT).show();

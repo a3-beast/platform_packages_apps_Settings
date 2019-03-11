@@ -272,6 +272,7 @@
                       style="@style/form_value"
                       android:layout_alignBaseline="@+id/refresh_smsc"
                       android:layout_toStartOf="@id/update_smsc"
+                      android:textDirection="locale"
                       android:layout_toEndOf="@id/smsc_label" />
         </RelativeLayout>
 

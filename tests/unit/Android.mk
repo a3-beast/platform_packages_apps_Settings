@@ -26,10 +26,10 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
 # Include all test java files.
 LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
-LOCAL_PACKAGE_NAME := SettingsUnitTests
+LOCAL_PACKAGE_NAME := MtkSettingsUnitTests
 LOCAL_PRIVATE_PLATFORM_APIS := true
 LOCAL_COMPATIBILITY_SUITE := device-tests
 
-LOCAL_INSTRUMENTATION_FOR := Settings
+LOCAL_INSTRUMENTATION_FOR := MtkSettings
 
 include $(BUILD_PACKAGE)

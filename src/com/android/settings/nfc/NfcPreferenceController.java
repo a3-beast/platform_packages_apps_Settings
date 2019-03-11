@@ -30,15 +30,24 @@ import com.android.settingslib.core.lifecycle.LifecycleObserver;
 import com.android.settingslib.core.lifecycle.events.OnPause;
 import com.android.settingslib.core.lifecycle.events.OnResume;
 
+import com.mediatek.settings.FeatureOption;
+import android.util.Log;
+
 import java.util.List;
 
 public class NfcPreferenceController extends TogglePreferenceController
         implements LifecycleObserver, OnResume, OnPause {
 
     public static final String KEY_TOGGLE_NFC = "toggle_nfc";
+
+    /// M: Add MTK nfc seting @{
+    private static final String KEY_MTK_TOGGLE_NFC = "toggle_mtk_nfc";
+    private static final String TAG = "NfcPreferenceController";
+
     private final NfcAdapter mNfcAdapter;
     private NfcEnabler mNfcEnabler;
     private NfcAirplaneModeObserver mAirplaneModeObserver;
+
 
     public NfcPreferenceController(Context context, String key) {
         super(context, key);
@@ -49,6 +58,8 @@ public class NfcPreferenceController extends TogglePreferenceController
     public void displayPreference(PreferenceScreen screen) {
         super.displayPreference(screen);
         if (!isAvailable()) {
+            /// M: Remove MTK NFC setting if NFC is unavailable
+            setVisible(screen, KEY_MTK_TOGGLE_NFC, false /* visible */);
             mNfcEnabler = null;
             return;
         }
@@ -57,6 +68,15 @@ public class NfcPreferenceController extends TogglePreferenceController
                 (SwitchPreference) screen.findPreference(getPreferenceKey());
 
         mNfcEnabler = new NfcEnabler(mContext, switchPreference);
+        /// M: Remove NFC duplicate items @{
+        if (FeatureOption.MTK_NFC_ADDON_SUPPORT) {
+            Log.d(TAG, "MTK NFC support");
+            setVisible(screen, KEY_TOGGLE_NFC, false /* visible */);
+        } else {
+            Log.d(TAG, "MTK NFC not support");
+            setVisible(screen, KEY_MTK_TOGGLE_NFC, false /* visible */);
+        }
+        /// @}
 
         // Manually set dependencies for NFC when not toggleable.
         if (!isToggleableInAirplaneMode(mContext)) {
@@ -131,4 +151,16 @@ public class NfcPreferenceController extends TogglePreferenceController
                 Settings.Global.AIRPLANE_MODE_TOGGLEABLE_RADIOS);
         return toggleable != null && toggleable.contains(Settings.Global.RADIO_NFC);
     }
+
+    @Override
+    public void updateNonIndexableKeys(List<String> keys) {
+        if (isAvailable()) {
+            if (FeatureOption.MTK_NFC_ADDON_SUPPORT) {
+                keys.add(getPreferenceKey());
+            } else {
+                keys.add(KEY_MTK_TOGGLE_NFC);
+            }
+        }
+    }
+
 }

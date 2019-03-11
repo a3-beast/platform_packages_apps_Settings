@@ -121,6 +121,12 @@
     <item msgid="3079489731769553856">"TTLS"</item>
     <item msgid="35269224158638258">"PWD"</item>
   </string-array>
+    <!-- no translation found for wifi_ap_band_config_full:0 (1085243288162893079) -->
+    <!-- no translation found for wifi_ap_band_config_full:1 (5531376834915607202) -->
+    <!-- no translation found for wifi_ap_band_summary_full:0 (7176872102094020362) -->
+    <!-- no translation found for wifi_ap_band_summary_full:1 (311895158827229479) -->
+    <!-- no translation found for wifi_ap_band_config_2G_only:0 (7006771583217001015) -->
+    <!-- no translation found for wifi_ap_band_config_2G_only:1 (8904289885593822837) -->
   <string-array name="wifi_p2p_wps_setup">
     <item msgid="5085064298144493867">"पुश बटण"</item>
     <item msgid="1624323946324499595">"पीअर डिव्हाइसवरील पिन"</item>
@@ -183,7 +189,7 @@
     <item msgid="8926455723452645935">"AKA\'"</item>
   </string-array>
   <string-array name="wifi_phase2_entries">
-    <item msgid="1818786254010764570">"नको"</item>
+    <item msgid="1818786254010764570">"काहीही नाही"</item>
     <item msgid="6189918678874123056">"PAP"</item>
     <item msgid="1524112260493662517">"MSCHAP"</item>
     <item msgid="5923246669412752932">"MSCHAPV2"</item>
@@ -210,7 +216,7 @@
     <item msgid="8084938354605535381">"IPv4/IPv6"</item>
   </string-array>
   <string-array name="bearer_entries">
-    <item msgid="1697455674244601285">"नमूद केले नाही"</item>
+    <item msgid="1697455674244601285">"निर्दिष्ट केले नाही"</item>
     <item msgid="1317061551798123908">"LTE"</item>
     <item msgid="5005435684511894770">"HSPAP"</item>
     <item msgid="7700603056475539235">"HSPA"</item>
@@ -426,9 +432,9 @@
   </string-array>
   <string-array name="vpn_types_long">
     <item msgid="2732002039459078847">"PPTP VPN"</item>
-    <item msgid="3799752201662127867">"पूर्व-शेअर की सह L2TP/IPSec VPN"</item>
+    <item msgid="3799752201662127867">"पूर्व-सामायिक की सह L2TP/IPSec VPN"</item>
     <item msgid="4725504331295252103">"प्रमाणपत्रांसह L2TP/IPSec VPN"</item>
-    <item msgid="7526551163264034377">"पूर्व-शेअर की आणि Xauth प्रमाणीकरणासह IPSec VPN"</item>
+    <item msgid="7526551163264034377">"पूर्व-सामायिक की आणि Xauth प्रमाणीकरणासह IPSec VPN"</item>
     <item msgid="8064740940687465039">"प्रमाणपत्रे आणि Xauth प्रमाणीकरणासह IPSec VPN"</item>
     <item msgid="4946199982372391490">"प्रमाणपत्रे आणि संकरित प्रमाणीकरणासह IPSec VPN"</item>
   </string-array>

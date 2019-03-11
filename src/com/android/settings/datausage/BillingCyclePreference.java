@@ -85,6 +85,7 @@ public class BillingCyclePreference extends Preference implements TemplatePrefer
     public Intent getIntent() {
         Bundle args = new Bundle();
         args.putParcelable(DataUsageList.EXTRA_NETWORK_TEMPLATE, mTemplate);
+        args.putInt(DataUsageList.EXTRA_SUB_ID, mSubId);
         return new SubSettingLauncher(getContext())
                 .setDestination(BillingCycleSettings.class.getName())
                 .setArguments(args)

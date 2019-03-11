@@ -46,6 +46,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -64,7 +65,7 @@ public class WifiP2pSettings extends DashboardFragment
         implements PersistentGroupInfoListener, PeerListListener {
 
     private static final String TAG = "WifiP2pSettings";
-    private static final boolean DBG = false;
+    private static final boolean DBG = true;
     private static final int MENU_ID_SEARCH = Menu.FIRST;
     private static final int MENU_ID_RENAME = Menu.FIRST + 1;
 
@@ -107,6 +108,9 @@ public class WifiP2pSettings extends DashboardFragment
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            if (DBG) { /// M: add debug log
+                Log.d(TAG, "receive action: " + action);
+            }
 
             if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
                 mWifiP2pEnabled = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE,
@@ -366,6 +370,7 @@ public class WifiP2pSettings extends DashboardFragment
     public void onPrepareOptionsMenu(Menu menu) {
         MenuItem searchMenu = menu.findItem(MENU_ID_SEARCH);
         MenuItem renameMenu = menu.findItem(MENU_ID_RENAME);
+        /** M: Google original code removed to adapt to our feature
         if (mWifiP2pEnabled) {
             searchMenu.setEnabled(true);
             renameMenu.setEnabled(true);
@@ -373,6 +378,11 @@ public class WifiP2pSettings extends DashboardFragment
             searchMenu.setEnabled(false);
             renameMenu.setEnabled(false);
         }
+         */
+        /// M: disable search menu when searching @{
+        searchMenu.setEnabled(mWifiP2pEnabled && !mWifiP2pSearching);
+        renameMenu.setEnabled(mWifiP2pEnabled);
+        /// @}
 
         if (mWifiP2pSearching) {
             searchMenu.setTitle(R.string.wifi_p2p_menu_searching);
@@ -476,6 +486,8 @@ public class WifiP2pSettings extends DashboardFragment
         } else if (id == DIALOG_RENAME) {
             mDeviceNameText = new EditText(getActivity());
             mDeviceNameText.setFilters(new InputFilter[] {new InputFilter.LengthFilter(30)});
+            /// M: RTL solution
+            mDeviceNameText.setTextDirection(View.TEXT_DIRECTION_LOCALE);
             if (mSavedDeviceName != null) {
                 mDeviceNameText.setText(mSavedDeviceName);
                 mDeviceNameText.setSelection(mSavedDeviceName.length());

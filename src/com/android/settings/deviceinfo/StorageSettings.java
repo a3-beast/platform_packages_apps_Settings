@@ -54,6 +54,7 @@ import com.android.settings.dashboard.SummaryLoader;
 import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settings.search.SearchIndexableRaw;
+import com.android.settings.Utils;
 import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.deviceinfo.PrivateStorageInfo;
 import com.android.settingslib.deviceinfo.StorageManagerVolumeProvider;
@@ -233,12 +234,17 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
                 mHasLaunchedPrivateVolumeSettings = true;
                 final Bundle args = new Bundle();
                 args.putString(VolumeInfo.EXTRA_VOLUME_ID, VolumeInfo.ID_PRIVATE_INTERNAL);
-                new SubSettingLauncher(getActivity())
+                if(Utils.isMonkeyRunning()){
+                    Log.e(TAG, "Monkey test running so finishing storage manager dashboard settings");
+                }
+                else {
+                    new SubSettingLauncher(getActivity())
                         .setDestination(StorageDashboardFragment.class.getName())
                         .setArguments(args)
                         .setTitle(R.string.storage_settings)
                         .setSourceMetricsCategory(getMetricsCategory())
                         .launch();
+                }
                 finish();
             }
         }
@@ -281,12 +287,16 @@ public class StorageSettings extends SettingsPreferenceFragment implements Index
                 args.putString(VolumeInfo.EXTRA_VOLUME_ID, vol.getId());
 
                 if (VolumeInfo.ID_PRIVATE_INTERNAL.equals(vol.getId())) {
-                    new SubSettingLauncher(getContext())
+                    if(Utils.isMonkeyRunning()) {
+                        Log.e(TAG, "Monkey test running so finishing storage manager dashboard settings");
+                    } else {
+                        new SubSettingLauncher(getContext())
                             .setDestination(StorageDashboardFragment.class.getCanonicalName())
                             .setTitle(R.string.storage_settings)
                             .setSourceMetricsCategory(getMetricsCategory())
                             .setArguments(args)
                             .launch();
+                    }
                 } else {
                     // TODO: Go to the StorageDashboardFragment once it fully handles all of the
                     //       SD card cases and other private internal storage cases.

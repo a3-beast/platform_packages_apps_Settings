@@ -53,6 +53,16 @@
         </intent>
     </Preference>
 
+    <!-- M : wapi cert manager add start -->
+    <Preference
+            android:key="wapi_cert_manage"
+            android:title="@string/wapi_cert_manage_title"
+            android:persistent="false">
+            <intent
+                android:action="android.Wapi.CertManager" />
+     </Preference>
+     <!-- M : wapi cert manager add start end -->
+
     <Preference
         android:key="network_scorer_picker"
         android:title="@string/network_scorer_picker_title"

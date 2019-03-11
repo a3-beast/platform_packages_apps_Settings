@@ -24,7 +24,10 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+/// M: Add for checking current user.
+import android.os.UserManager;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.telephony.PhoneStateIntentReceiver;
@@ -33,6 +36,8 @@ import com.android.settingslib.WirelessUtils;
 import com.android.settingslib.core.instrumentation.MetricsFeatureProvider;
 
 public class AirplaneModeEnabler {
+
+    private static final String TAG = "AirplaneModeEnabler";
 
     private static final int EVENT_SERVICE_STATE_CHANGED = 3;
 
@@ -125,9 +130,15 @@ public class AirplaneModeEnabler {
     }
 
     public void setAirplaneMode(boolean isAirplaneModeOn) {
-        if (Boolean.parseBoolean(
-                SystemProperties.get(TelephonyProperties.PROPERTY_INECM_MODE))) {
+        /// M: need to check ECM for all SIMs, as the property may be like "true,false". @{
+        Log.d(TAG, "setAirplaneMode, isAirplaneModeOn=" + isAirplaneModeOn);
+        String ecbMode = SystemProperties.get(TelephonyProperties.PROPERTY_INECM_MODE, "false");
+        // Add for ALPS02894779, switch airplane mode anyway in non admin mode.
+        boolean isAdmin = UserManager.get(mContext).isAdminUser();
+        if (ecbMode != null && ecbMode.contains("true") && isAdmin) {
+            Log.d(TAG, "ignore as ecbMode=" + ecbMode);
             // In ECM mode, do not update database at this point
+        /// @}
         } else {
             mMetricsFeatureProvider.action(mContext, MetricsEvent.ACTION_AIRPLANE_TOGGLE,
                     isAirplaneModeOn);

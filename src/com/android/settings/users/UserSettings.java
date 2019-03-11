@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -152,6 +153,15 @@ public class UserSettings extends SettingsPreferenceFragment
     // A place to cache the generated default avatar
     private Drawable mDefaultIconDrawable;
 
+    /// M: Add to block user quickly click deleting user icon to avoid JE.
+    /// For deleting user isn't synchrous with UI,
+    /// when user quickly click the delete icon while user removed broadcast received, the
+    /// mRemovingUserId is reset to -1 and this will lead to Null pointer exception.
+    private ProgressDialog mDeletingUserDialog;
+
+    /// M: Flag for update user list operation
+    private boolean mUpdateUserListOperate = false;
+
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -173,6 +183,8 @@ public class UserSettings extends SettingsPreferenceFragment
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(Intent.ACTION_USER_REMOVED)) {
+                /// M: Dismiss delete user dialog when received user removed broadcast
+                dismissDeleteUserDialog();
                 mRemovingUserId = -1;
             } else if (intent.getAction().equals(Intent.ACTION_USER_INFO_CHANGED)) {
                 int userHandle = intent.getIntExtra(Intent.EXTRA_USER_HANDLE, -1);
@@ -354,7 +366,11 @@ public class UserSettings extends SettingsPreferenceFragment
                 UserInfo user = mUserManager.getUserInfo(UserHandle.myUserId());
                 if (user.iconPath == null || user.iconPath.equals("")) {
                     // Assign profile photo.
-                    copyMeProfilePhoto(getActivity(), user);
+                    /// M: Check getActivity() is null
+                    Context context = getActivity();
+                    if (context != null) {
+                        copyMeProfilePhoto(context.getApplicationContext(), user);
+                    }
                 }
                 return user.name;
             }
@@ -678,6 +694,8 @@ public class UserSettings extends SettingsPreferenceFragment
         if (mRemovingUserId == UserHandle.myUserId()) {
             removeThisUser();
         } else {
+            /// M: Show dialog to block user from quickly delete multiple users
+            showDeleteUserDialog();
             new Thread() {
                 public void run() {
                     synchronized (mUserLock) {
@@ -760,6 +778,7 @@ public class UserSettings extends SettingsPreferenceFragment
     }
 
     private void updateUserList() {
+        mUpdateUserListOperate = true;
         if (getActivity() == null) return;
         List<UserInfo> users = mUserManager.getUsers(true);
         final Context context = getActivity();
@@ -926,6 +945,7 @@ public class UserSettings extends SettingsPreferenceFragment
             }
         }
 
+        mUpdateUserListOperate = false;
     }
 
     private int getMaxRealUsers() {
@@ -1026,6 +1046,9 @@ public class UserSettings extends SettingsPreferenceFragment
             int userId = ((UserPreference) v.getTag()).getUserId();
             switch (v.getId()) {
                 case UserPreference.DELETE_ID:
+                    if (mUpdateUserListOperate) {
+                        return;
+                    }
                     final EnforcedAdmin removeDisallowedAdmin =
                             RestrictedLockUtils.checkIfRestrictionEnforced(getContext(),
                                     UserManager.DISALLOW_REMOVE_USER, UserHandle.myUserId());
@@ -1129,6 +1152,27 @@ public class UserSettings extends SettingsPreferenceFragment
         } catch (IOException ioe) {
         }
     }
+
+    /// M: Show/dismiss delete user waiting dialog @{
+    private void showDeleteUserDialog() {
+        if (mDeletingUserDialog == null) {
+            mDeletingUserDialog = new ProgressDialog(getActivity());
+            mDeletingUserDialog.setMessage(
+                    getResources().getString(R.string.master_clear_progress_text));
+            mDeletingUserDialog.setIndeterminate(true);
+            mDeletingUserDialog.setCancelable(false);
+        }
+        if (!mDeletingUserDialog.isShowing()) {
+            mDeletingUserDialog.show();
+        }
+    }
+
+    private void dismissDeleteUserDialog() {
+        if (mDeletingUserDialog != null && mDeletingUserDialog.isShowing()) {
+            mDeletingUserDialog.dismiss();
+        }
+    }
+    /// @}
 
     private static class SummaryProvider implements SummaryLoader.SummaryProvider {
 

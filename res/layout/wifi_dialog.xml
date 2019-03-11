@@ -56,6 +56,7 @@
                         style="@style/wifi_item_edit_content"
                         android:hint="@string/wifi_ssid_hint"
                         android:singleLine="true"
+                        android:textDirection="locale"
                         android:inputType="textNoSuggestions" />
 
                 <LinearLayout android:id="@+id/ssid_too_long_warning"
@@ -77,6 +78,7 @@
                     android:layout_height="wrap_content"
                     style="@style/wifi_item" >
                 <TextView
+                        android:id="@+id/security_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:minEms="16"
@@ -121,6 +123,25 @@
                             style="@style/wifi_item_spinner"
                             android:prompt="@string/wifi_eap_method"
                             android:entries="@array/wifi_eap_method" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/sim_slot_fields"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        style="@style/wifi_item"
+                        android:visibility="gone" >
+
+                    <TextView style="@style/wifi_item_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sim_slot" />
+
+                    <Spinner android:id="@+id/sim_slot"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        style="@style/wifi_item_content"
+                        android:prompt="@string/sim_slot"
+                        android:entries="@array/sim_slot" />
                 </LinearLayout>
 
                 <LinearLayout android:id="@+id/l_phase2"
@@ -187,6 +208,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
 
@@ -236,6 +258,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
 
@@ -255,6 +278,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
             </LinearLayout>
@@ -274,6 +298,7 @@
                         android:layout_height="wrap_content"
                         style="@style/wifi_item_edit_content"
                         android:singleLine="true"
+                        android:textDirection="locale"
                         android:password="true" />
             </LinearLayout>
 
@@ -294,6 +319,36 @@
                         android:text="@string/wifi_show_password" />
             </LinearLayout>
         </LinearLayout>
+
+        <!-- WAPI start -->
+        <LinearLayout android:id="@+id/wapi_cert_fields"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                style="@style/wifi_item">
+
+                <TextView
+                        style="@style/wifi_item_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dip"
+                        android:text="@string/wifi_security_wapi_certificate" />
+
+                <Spinner android:id="@+id/wapi_cert"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:prompt="@string/wifi_security_wapi_certificate"
+                        style="@style/wifi_item_content" />
+        </LinearLayout>
+        <!--WAPI end-->
+
+        <!-- CMCC WLAN priority layout start -->
+        <LinearLayout android:id="@+id/priority_field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/wifi_item"/>
+        <!-- CMCC WLAN priority layout end -->
 
         <LinearLayout android:id="@+id/wifi_advanced_toggle"
                 android:layout_width="match_parent"
@@ -397,6 +452,7 @@
                             style="@style/wifi_item_content"
                             android:hint="@string/proxy_url_hint"
                             android:inputType="textNoSuggestions"
+                            android:textDirection="locale"
                             android:singleLine="true"/>
                 </LinearLayout>
             </LinearLayout>
@@ -422,6 +478,7 @@
                             style="@style/wifi_item_edit_content"
                             android:hint="@string/proxy_hostname_hint"
                             android:inputType="textNoSuggestions"
+                            android:textDirection="locale"
                             android:singleLine="true" />
                 </LinearLayout>
                 <LinearLayout
@@ -440,13 +497,14 @@
                             style="@style/wifi_item_edit_content"
                             android:hint="@string/proxy_port_hint"
                             android:inputType="number"
+                            android:textDirection="locale"
                             android:singleLine="true" />
                 </LinearLayout>
                 <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         style="@style/wifi_item">
-                    <TextView
+                    <TextView android:id="@+id/proxy_exclusionlist_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_label"
@@ -458,6 +516,7 @@
                             style="@style/wifi_item_edit_content"
                             android:hint="@string/proxy_exclusionlist_hint"
                             android:inputType="textNoSuggestions"
+                            android:textDirection="locale"
                             android:singleLine="true" />
                 </LinearLayout>
             </LinearLayout>
@@ -503,6 +562,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:hint="@string/wifi_ip_address_hint"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
@@ -522,6 +582,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:hint="@string/wifi_gateway_hint"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
@@ -541,6 +602,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:hint="@string/wifi_network_prefix_length_hint"
                             android:inputType="number" />
                 </LinearLayout>
@@ -559,6 +621,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:hint="@string/wifi_dns1_hint"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>
@@ -578,6 +641,7 @@
                             android:layout_height="wrap_content"
                             style="@style/wifi_item_edit_content"
                             android:singleLine="true"
+                            android:textDirection="locale"
                             android:hint="@string/wifi_dns2_hint"
                             android:inputType="textNoSuggestions" />
                 </LinearLayout>

@@ -130,10 +130,13 @@ public final class DataUsageUtils {
         }
         SubscriptionInfo subscriptionInfo = subManager.getDefaultDataSubscriptionInfo();
         if (subscriptionInfo == null) {
-            List<SubscriptionInfo> list = subManager.getAllSubscriptionInfoList();
-            if (list.size() == 0) {
+            /// M: Get the active subscription list but not get all subscription list. @{
+            //List<SubscriptionInfo> list = subManager.getAllSubscriptionInfoList();
+            List<SubscriptionInfo> list = subManager.getActiveSubscriptionInfoList();
+            if (list == null || list.size() == 0) {
                 return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
             }
+            /// @}
             subscriptionInfo = list.get(0);
         }
         return subscriptionInfo.getSubscriptionId();

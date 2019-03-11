@@ -31,6 +31,9 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settings.wifi.p2p.WifiP2pPreferenceController;
 import com.android.settingslib.core.AbstractPreferenceController;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IWifiExt;
+import com.mediatek.settings.wifi.WapiCertPreferenceController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,6 +49,7 @@ public class ConfigureWifiSettings extends DashboardFragment {
     private WifiWakeupPreferenceController mWifiWakeupPreferenceController;
     private UseOpenWifiPreferenceController mUseOpenWifiPreferenceController;
 
+    private IWifiExt iWifiExt;
     @Override
     public int getMetricsCategory() {
         return MetricsEvent.CONFIGURE_WIFI;
@@ -77,12 +81,21 @@ public class ConfigureWifiSettings extends DashboardFragment {
                 getLifecycle());
         final WifiManager wifiManager = (WifiManager) getSystemService(WIFI_SERVICE);
         final List<AbstractPreferenceController> controllers = new ArrayList<>();
+        iWifiExt =  UtilsExt.getWifiExt(context);
         controllers.add(mWifiWakeupPreferenceController);
         controllers.add(new NotifyOpenNetworksPreferenceController(context, getLifecycle()));
         controllers.add(mUseOpenWifiPreferenceController);
         controllers.add(new WifiInfoPreferenceController(context, getLifecycle(), wifiManager));
         controllers.add(new CellularFallbackPreferenceController(context));
         controllers.add(new WifiP2pPreferenceController(context, getLifecycle(), wifiManager));
+        /// M: For CMCC WLAN settings feature @{
+        iWifiExt.addPreferenceController(controllers,
+                iWifiExt.createWifiPreferenceController(context, getLifecycle()));
+        /// @}
+
+        /// M: For wapi cert manager feature @{
+        controllers.add(new WapiCertPreferenceController(context));
+        /// @}
         return controllers;
     }
 

@@ -41,6 +41,7 @@ import android.widget.ListView;
 import com.android.settings.Utils;
 import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.RestrictedPreferenceHelper;
+import android.support.v7.preference.PreferenceManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,6 +108,12 @@ public class RestrictedListPreference extends CustomListPreference {
             return;
         }
         super.setEnabled(enabled);
+    }
+
+    @Override
+    protected void onAttachedToHierarchy(PreferenceManager preferenceManager) {
+        mHelper.onAttachedToHierarchy();
+        super.onAttachedToHierarchy(preferenceManager);
     }
 
     public void setDisabledByAdmin(EnforcedAdmin admin) {

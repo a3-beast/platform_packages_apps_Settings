@@ -43,8 +43,11 @@ import android.widget.ListView;
 
 import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
+import com.android.settings.Settings.DreamSettingsActivity;
 import com.android.settings.Settings.TetherSettingsActivity;
 import com.android.settings.overlay.FeatureFactory;
+import com.android.settingslib.Utils;
+import com.mediatek.settings.FeatureOption;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,8 +158,15 @@ public class CreateShortcut extends LauncherActivity {
         for (int i = activities.size() - 1; i >= 0; i--) {
             ResolveInfo info = activities.get(i);
             if (info.activityInfo.name.endsWith(TetherSettingsActivity.class.getSimpleName())) {
-                if (!cm.isTetheringSupported()) {
+                /// M: Remove TetherSettings in Wifi only project
+                if (!cm.isTetheringSupported() || Utils.isWifiOnly(this)) {
                     activities.remove(i);
+                }
+            /// M: Remove Daydream when low ram
+            } else if (info.activityInfo.name
+                   .endsWith(DreamSettingsActivity.class.getSimpleName())) {
+               if (FeatureOption.MTK_GMO_RAM_OPTIMIZE) {
+                   activities.remove(i);
                 }
             }
         }

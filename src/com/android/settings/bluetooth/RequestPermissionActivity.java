@@ -55,6 +55,9 @@ public class RequestPermissionActivity extends Activity implements
     static final int REQUEST_ENABLE = 1;
     static final int REQUEST_ENABLE_DISCOVERABLE = 2;
     static final int REQUEST_DISABLE = 3;
+    /// M : add request code CR ALPS00379011
+    private static final int REQUEST_CODE_START_BT = 1;
+    private static int mRequestCode = REQUEST_CODE_START_BT;
 
     private LocalBluetoothAdapter mLocalAdapter;
 
@@ -124,11 +127,15 @@ public class RequestPermissionActivity extends Activity implements
                      */
                     Intent intent = new Intent(this, RequestPermissionHelperActivity.class);
                     intent.setAction(RequestPermissionHelperActivity.ACTION_INTERNAL_REQUEST_BT_ON);
+                    /// M: add a flag for CR ALPS00379011
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     intent.putExtra(RequestPermissionHelperActivity.EXTRA_APP_LABEL, mAppLabel);
                     if (mRequest == REQUEST_ENABLE_DISCOVERABLE) {
                         intent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, mTimeout);
                     }
-                    startActivityForResult(intent, 0);
+                    /// M: add a flag for CR ALPS00379011
+                    startActivityForResult(intent, mRequestCode);
+                    mRequestCode += 1;
                 } break;
 
                 case BluetoothAdapter.STATE_ON: {
@@ -194,6 +201,14 @@ public class RequestPermissionActivity extends Activity implements
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        //// M: add a flag for CR ALPS00379011
+        if (requestCode != mRequestCode - 1) {
+             Log.e(TAG, "Unexpected onActivityResult " + requestCode + ' ' + resultCode);
+             setResult(RESULT_CANCELED);
+             finish();
+             return;
+         }
+
         if (resultCode != Activity.RESULT_OK) {
             cancelAndFinish();
             return;

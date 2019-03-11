@@ -40,6 +40,9 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.mediatek.settings.display.AodPreferenceController;
+import com.mediatek.settings.display.HdmiPreferenceController;
+import com.mediatek.settings.display.MiraVisionPreferenceController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,6 +102,15 @@ public class DisplaySettings extends DashboardFragment {
         controllers.add(new ThemePreferenceController(context));
         controllers.add(new BrightnessLevelPreferenceController(context, lifecycle));
         controllers.add(new ColorModePreferenceController(context));
+        /// M: Add MiraVision settings preference @{
+        controllers.add(new MiraVisionPreferenceController(context));
+        /// @}
+        /// M: Add AOD switch @{
+        controllers.add(new AodPreferenceController(context));
+        /// @}
+        /// M: add for HDMI settings @{
+        controllers.add(new HdmiPreferenceController(context));
+        /// @}
         return controllers;
     }
 

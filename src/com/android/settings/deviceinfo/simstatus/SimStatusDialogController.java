@@ -34,24 +34,43 @@ import android.support.annotation.NonNull;
 import android.support.annotation.VisibleForTesting;
 import android.telephony.CarrierConfigManager;
 import android.telephony.CellBroadcastMessage;
+/// M: Add for updating CDMA SIM status.
+import android.telephony.CellLocation;
 import android.telephony.PhoneStateListener;
+/// M: Listen precise data connection state for temp data service.
+import android.telephony.PreciseDataConnectionState;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+/// M: Add for updating CDMA SIM status.
+import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.euicc.EuiccManager;
 import android.text.BidiFormatter;
 import android.text.TextDirectionHeuristics;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.android.internal.telephony.PhoneConstants;
 import com.android.settings.R;
 import com.android.settingslib.DeviceInfoUtils;
 import com.android.settingslib.core.lifecycle.Lifecycle;
 import com.android.settingslib.core.lifecycle.LifecycleObserver;
 import com.android.settingslib.core.lifecycle.events.OnPause;
 import com.android.settingslib.core.lifecycle.events.OnResume;
+
+/// M: Listen precise data connection state for temp data service.
+import com.mediatek.internal.telephony.MtkPhoneConstants;
+/// M: Add for SIM settings plugin.
+import com.mediatek.settings.UtilsExt;
+/// M: Add for updating CDMA SIM status.
+import com.mediatek.settings.cdma.CdmaSimStatus;
+/// M: Add for SIM settings plugin.
+import com.mediatek.settings.ext.ISettingsMiscExt;
+
+/// M: Add for SIM status plugin.
+import com.mediatek.settings.ext.IStatusExt;
 
 import java.util.List;
 
@@ -92,6 +111,23 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
     @VisibleForTesting
     final static int IMS_REGISTRATION_STATE_VALUE_ID = R.id.ims_reg_state_value;
 
+    /// M: Add for updating CDMA SIM status. @{
+    @VisibleForTesting
+    final static int MCC_MNC_INFO_LABEL_ID = R.id.mcc_mnc_id_label;
+    @VisibleForTesting
+    final static int MCC_MNC_INFO_VALUE_ID = R.id.mcc_mnc_id_value;
+    @VisibleForTesting
+    final static int SID_NID_INFO_LABEL_ID = R.id.sid_nid_id_label;
+    @VisibleForTesting
+    final static int SID_NID_INFO_VALUE_ID = R.id.sid_nid_id_value;
+    @VisibleForTesting
+    final static int CELL_ID_INFO_LABEL_ID = R.id.cell_id_label;
+    @VisibleForTesting
+    final static int CELL_ID_INFO_VALUE_ID = R.id.cell_id_value;
+
+    private static final int MCC_LENGTH = 3;
+    /// @}
+
     private final static String CB_AREA_INFO_RECEIVED_ACTION =
             "com.android.cellbroadcastreceiver.CB_AREA_INFO_RECEIVED";
     private final static String GET_LATEST_CB_AREA_INFO_ACTION =
@@ -129,13 +165,18 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
 
     private PhoneStateListener mPhoneStateListener;
 
+    /// M: Add for updating CDMA SIM status.
+    private CdmaSimStatus mCdmaSimStatus;
+    /// M: Add for SIM settings plugin.
+    private ISettingsMiscExt mMiscExt;
+
+    private IStatusExt mStatusExt;
+
     public SimStatusDialogController(@NonNull SimStatusDialogFragment dialog, Lifecycle lifecycle,
             int slotId) {
         mDialog = dialog;
         mContext = dialog.getContext();
         mSubscriptionInfo = getPhoneSubscriptionInfo(slotId);
-        mTelephonyManager = (TelephonyManager) mContext.getSystemService(
-                TELEPHONY_SERVICE);
         mCarrierConfigManager = (CarrierConfigManager) mContext.getSystemService(
                 CARRIER_CONFIG_SERVICE);
         mEuiccManager = (EuiccManager) mContext.getSystemService(EUICC_SERVICE);
@@ -145,12 +186,33 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         if (lifecycle != null) {
             lifecycle.addObserver(this);
         }
+
+        /// M: Create TelephonyManager for subscription. @{
+        if (mSubscriptionInfo != null) {
+            mTelephonyManager = TelephonyManager.from(mContext).createForSubscriptionId(
+                    mSubscriptionInfo.getSubscriptionId());
+        } else {
+            mTelephonyManager = (TelephonyManager) mContext.getSystemService(
+                    TELEPHONY_SERVICE);
+        }
+        /// @}
+
+        /// M: Add for updating CDMA SIM status.
+        mCdmaSimStatus = new CdmaSimStatus(mDialog, mSubscriptionInfo);
+
+        /// M: Add for SIM settings plugin.
+        mMiscExt = UtilsExt.getMiscPlugin(mContext);
+
+        /// M: Add for SIM status plugin.
+        mStatusExt = UtilsExt.getStatusExt(mContext);
     }
 
     public void initialize() {
         updateEid();
 
         if (mSubscriptionInfo == null) {
+            /// M: Remove CDMA status.
+            removeCdmaStatus();
             return;
         }
 
@@ -166,6 +228,9 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         updateRoamingStatus(serviceState);
         updateIccidNumber();
         updateImsRegistrationState();
+
+        /// M: Update CDMA status.
+        updateCdmaStatus(serviceState);
     }
 
     @Override
@@ -174,8 +239,22 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
             return;
         }
 
+        /// M: Update related status. @{
+        updateDataState(mTelephonyManager.getDataState());
+        final ServiceState serviceState = getCurrentServiceState();
+        updateNetworkProvider(serviceState);
+        updateServiceState(serviceState);
+        updateSignalStrength(getSignalStrength());
+        updateNetworkType();
+        updateRoamingStatus(serviceState);
+        updateCdmaStatus(serviceState);
+        /// @}
+
         mTelephonyManager.listen(mPhoneStateListener,
                 PhoneStateListener.LISTEN_DATA_CONNECTION_STATE
+                        /// M: Listen precise data connection state for temp data service. @{
+                        | PhoneStateListener.LISTEN_PRECISE_DATA_CONNECTION_STATE
+                        /// @}
                         | PhoneStateListener.LISTEN_SIGNAL_STRENGTHS
                         | PhoneStateListener.LISTEN_SERVICE_STATE);
 
@@ -188,6 +267,12 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
             getLatestIntent.setPackage(CELL_BROADCAST_RECEIVER_APP);
             mContext.sendBroadcastAsUser(getLatestIntent, UserHandle.ALL,
                     Manifest.permission.RECEIVE_EMERGENCY_BROADCAST);
+        }
+        if (mSubscriptionInfo.getSubscriptionId() != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            // MTK-START
+            mContext.registerReceiver(mAllRecordsLoadedReceiver,
+                    new IntentFilter(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED));
+            // MTK-END
         }
     }
 
@@ -203,6 +288,9 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         if (mShowLatestAreaInfo) {
             mContext.unregisterReceiver(mAreaInfoReceiver);
         }
+        if (mSubscriptionInfo.getSubscriptionId() != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            mContext.unregisterReceiver(mAllRecordsLoadedReceiver);
+        }
     }
 
     private void updateNetworkProvider(ServiceState serviceState) {
@@ -211,8 +299,10 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
 
     private void updatePhoneNumber() {
         // If formattedNumber is null or empty, it'll display as "Unknown".
-        mDialog.setText(PHONE_NUMBER_VALUE_ID, BidiFormatter.getInstance().unicodeWrap(
-                getPhoneNumber(), TextDirectionHeuristics.LTR));
+        String number = mStatusExt.updatePhoneNumber(BidiFormatter.getInstance().unicodeWrap(
+                getPhoneNumber(), TextDirectionHeuristics.LTR),
+                mSubscriptionInfo.getSimSlotIndex(), mContext);
+        mDialog.setText(PHONE_NUMBER_VALUE_ID, number);
     }
 
     private void updateDataState(int state) {
@@ -252,6 +342,7 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
     }
 
     private void updateServiceState(ServiceState serviceState) {
+        Log.d(TAG, "updateServiceState, serviceState=" + serviceState);
         final int state = serviceState.getState();
         if (state == ServiceState.STATE_OUT_OF_SERVICE || state == ServiceState.STATE_POWER_OFF) {
             resetSignalStrength();
@@ -262,6 +353,8 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         switch (state) {
             case ServiceState.STATE_IN_SERVICE:
                 serviceStateValue = mRes.getString(R.string.radioInfo_service_in);
+                /// M: For ALPS03018051, update signal strength when entering IN_SERVICE state.
+                updateSignalStrength(getSignalStrength());
                 break;
             case ServiceState.STATE_OUT_OF_SERVICE:
             case ServiceState.STATE_EMERGENCY_ONLY:
@@ -278,6 +371,9 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         }
 
         mDialog.setText(SERVICE_STATE_VALUE_ID, serviceStateValue);
+
+        /// M: Add for updating CDMA SIM status.
+        mCdmaSimStatus.setServiceState(serviceState);
     }
 
     private void updateSignalStrength(SignalStrength signalStrength) {
@@ -316,6 +412,11 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
 
         mDialog.setText(SIGNAL_STRENGTH_VALUE_ID, mRes.getString(R.string.sim_signal_strength,
                 signalDbm, signalAsu));
+
+        /// M: Add for updating CDMA SIM status. @{
+        mCdmaSimStatus.updateSignalStrength(signalStrength, SIGNAL_STRENGTH_VALUE_ID,
+                mRes.getString(R.string.sim_signal_strength, signalDbm, signalAsu));
+        /// @}
     }
 
     private void resetSignalStrength() {
@@ -329,6 +430,9 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
         final int subId = mSubscriptionInfo.getSubscriptionId();
         final int actualDataNetworkType = mTelephonyManager.getDataNetworkType(subId);
         final int actualVoiceNetworkType = mTelephonyManager.getVoiceNetworkType(subId);
+        Log.d(TAG, "updateNetworkType, dataType=" + actualDataNetworkType
+                + ", voiceType=" + actualVoiceNetworkType);
+
         if (TelephonyManager.NETWORK_TYPE_UNKNOWN != actualDataNetworkType) {
             dataNetworkTypeName = mTelephonyManager.getNetworkTypeName(actualDataNetworkType);
         }
@@ -356,6 +460,11 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
             }
         }
 
+        /// M: Add for SIM settings plugin. @{
+        dataNetworkTypeName = mMiscExt.getNetworktypeString(dataNetworkTypeName, subId);
+        voiceNetworkTypeName = mMiscExt.getNetworktypeString(voiceNetworkTypeName, subId);
+        /// @}
+
         mDialog.setText(CELL_VOICE_NETWORK_TYPE_VALUE_ID, voiceNetworkTypeName);
         mDialog.setText(CELL_DATA_NETWORK_TYPE_VALUE_ID, dataNetworkTypeName);
     }
@@ -378,10 +487,16 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
             showIccId = carrierConfig.getBoolean(
                     CarrierConfigManager.KEY_SHOW_ICCID_IN_SIM_STATUS_BOOL);
         }
+        Log.i(TAG, "showIccId = " + showIccId);
         if (!showIccId) {
             mDialog.removeSettingFromScreen(ICCID_INFO_LABEL_ID);
             mDialog.removeSettingFromScreen(ICCID_INFO_VALUE_ID);
         } else {
+            if (!mDialog.isSettingOnScreen(ICCID_INFO_LABEL_ID)) {
+                Log.i(TAG, "add setingsTO Screen ");
+                mDialog.addSettingToScreen(ICCID_INFO_LABEL_ID);
+                mDialog.addSettingToScreen(ICCID_INFO_VALUE_ID);
+            }
             mDialog.setText(ICCID_INFO_VALUE_ID, getSimSerialNumber(subscriptionId));
         }
     }
@@ -407,13 +522,13 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
     }
 
     private SubscriptionInfo getPhoneSubscriptionInfo(int slotId) {
-        final List<SubscriptionInfo> subscriptionInfoList = SubscriptionManager.from(
-                mContext).getActiveSubscriptionInfoList();
-        if (subscriptionInfoList != null && subscriptionInfoList.size() > slotId) {
-            return subscriptionInfoList.get(slotId);
-        } else {
-            return null;
-        }
+        /// M: Get subscription info of the specified slotId. @{
+        SubscriptionInfo subInfo = SubscriptionManager.from(mContext)
+                .getActiveSubscriptionInfoForSimSlotIndex(slotId);
+        Log.d(TAG, "getPhoneSubscriptionInfo, slotId=" + slotId
+                + ", subInfo=" + (subInfo == null ? "null" : subInfo));
+        return subInfo;
+        /// @}
     }
 
     @VisibleForTesting
@@ -438,20 +553,67 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
                 mSubscriptionInfo.getSubscriptionId()) {
             @Override
             public void onDataConnectionStateChanged(int state) {
+                /// M: Add null check for getDialog. @{
+                if (mDialog.getDialog() == null) {
+                    Log.w(TAG, "DataConnectionStateChanged, dialog is null.");
+                    return;
+                }
+                /// @}
+                Log.d(TAG, "onDataConnectionStateChanged, state=" + state
+                        + ", subInfo=" + mSubscriptionInfo);
                 updateDataState(state);
                 updateNetworkType();
             }
 
+            /// M: Listen precise data connection state for temp data service. @{
+            @Override
+            public void onPreciseDataConnectionStateChanged(
+                    PreciseDataConnectionState dataConnectionState) {
+                /// M: Add null check for getDialog. @{
+                if (mDialog.getDialog() == null) {
+                    Log.w(TAG, "onPreciseDataConnectionStateChanged, dialog is null.");
+                    return;
+                }
+                /// @}
+                String apnType = dataConnectionState.getDataConnectionAPNType();
+                if (apnType != null && apnType.equals(MtkPhoneConstants.APN_TYPE_PREEMPT)) {
+                    int state = dataConnectionState.getDataConnectionState();
+                    Log.d(TAG, "onPreciseDataConnectionStateChanged, state=" + state
+                            + ", dataConnectionState=" + dataConnectionState);
+                    updateDataState(state);
+                }
+            }
+            /// @}
+
             @Override
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+                /// M: Add null check for getDialog. @{
+                if (mDialog.getDialog() == null) {
+                    Log.w(TAG, "onSignalStrengthsChanged, dialog is null.");
+                    return;
+                }
+                /// @}
+                Log.d(TAG, "onSignalStrengthsChanged, signalStrength=" + signalStrength);
                 updateSignalStrength(signalStrength);
             }
 
             @Override
             public void onServiceStateChanged(ServiceState serviceState) {
+                /// M: Add null check for getDialog. @{
+                if (mDialog.getDialog() == null) {
+                    Log.w(TAG, "onServiceStateChanged, dialog is null.");
+                    return;
+                }
+                /// @}
+                Log.d(TAG, "onServiceStateChanged, serviceState=" + serviceState);
                 updateNetworkProvider(serviceState);
                 updateServiceState(serviceState);
                 updateRoamingStatus(serviceState);
+                /// M: Update network type.
+                updateNetworkType();
+                /// M: Update CDMA status.
+                updateCdmaStatus(serviceState);
+                updateIccidNumber();
             }
         };
     }
@@ -470,4 +632,110 @@ public class SimStatusDialogController implements LifecycleObserver, OnResume, O
     String getSimSerialNumber(int subscriptionId) {
         return mTelephonyManager.getSimSerialNumber(subscriptionId);
     }
+
+    /// M: Add for updating CDMA SIM status. @{
+    private void updateCdmaStatus(ServiceState serviceState) {
+        int subId = mSubscriptionInfo.getSubscriptionId();
+        int phoneType = mTelephonyManager.getCurrentPhoneType(subId);
+        Log.d(TAG, "updateCdmaStatus, subId=" + subId + ", phoneType=" + phoneType);
+
+        if (phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
+            // Update MCC and MNC
+            updateMccMnc();
+            // Update SID and NID
+            updateSidNid(serviceState);
+            // Update Cell ID
+            updateCellId();
+        } else {
+            removeCdmaStatus();
+        }
+    }
+
+    private void removeCdmaStatus() {
+        // Remove MCC/MNC, SID/NID and Cell ID
+        mDialog.removeSettingFromScreen(MCC_MNC_INFO_LABEL_ID);
+        mDialog.removeSettingFromScreen(MCC_MNC_INFO_VALUE_ID);
+        mDialog.removeSettingFromScreen(SID_NID_INFO_LABEL_ID);
+        mDialog.removeSettingFromScreen(SID_NID_INFO_VALUE_ID);
+        mDialog.removeSettingFromScreen(CELL_ID_INFO_LABEL_ID);
+        mDialog.removeSettingFromScreen(CELL_ID_INFO_VALUE_ID);
+    }
+
+    private void updateMccMnc() {
+        int subId = mSubscriptionInfo.getSubscriptionId();
+        String numeric = mTelephonyManager.getSimOperator(subId);
+        Log.d(TAG, "updateMccMnc, subId=" + subId + ", numeric=" + numeric);
+
+        if (numeric.length() > MCC_LENGTH) {
+            String mcc = numeric.substring(0, MCC_LENGTH);
+            String mnc = numeric.substring(MCC_LENGTH);
+            String mccmnc = mcc + "," + mnc;
+            Log.d(TAG, "updateMccMnc, mccmnc=" + mccmnc);
+            mDialog.setText(MCC_MNC_INFO_VALUE_ID, mccmnc);
+        } else {
+            Log.d(TAG, "updateMccMnc, numeric is too short.");
+            mDialog.setText(MCC_MNC_INFO_VALUE_ID, null);
+        }
+
+        if (!mDialog.isSettingOnScreen(MCC_MNC_INFO_LABEL_ID)) {
+            mDialog.addSettingToScreen(MCC_MNC_INFO_LABEL_ID);
+            mDialog.addSettingToScreen(MCC_MNC_INFO_VALUE_ID);
+        }
+    }
+
+    private void updateSidNid(ServiceState serviceState) {
+        Log.d(TAG, "updateSidNid, serviceState=" + serviceState);
+        int sid = serviceState.getCdmaSystemId();
+        int nid = serviceState.getCdmaNetworkId();
+        String sidnid = sid + "," + nid;
+        Log.d(TAG, "updateSidNid, sidnid=" + sidnid);
+        mDialog.setText(SID_NID_INFO_VALUE_ID, sidnid);
+
+        if (!mDialog.isSettingOnScreen(SID_NID_INFO_LABEL_ID)) {
+            mDialog.addSettingToScreen(SID_NID_INFO_LABEL_ID);
+            mDialog.addSettingToScreen(SID_NID_INFO_VALUE_ID);
+        }
+    }
+
+    private void updateCellId() {
+        CellLocation cellLocation = mTelephonyManager.getCellLocation();
+        if (cellLocation instanceof CdmaCellLocation) {
+            String cellId = Integer.toString(
+                    ((CdmaCellLocation) cellLocation).getBaseStationId());
+            Log.d(TAG, "updateCellId, cellId=" + cellId);
+            mDialog.setText(CELL_ID_INFO_VALUE_ID, cellId);
+        } else {
+            Log.d(TAG, "updateCellId, not CDMA cell location.");
+            mDialog.setText(CELL_ID_INFO_VALUE_ID, null);
+        }
+
+        if (!mDialog.isSettingOnScreen(CELL_ID_INFO_LABEL_ID)) {
+            mDialog.addSettingToScreen(CELL_ID_INFO_LABEL_ID);
+            mDialog.addSettingToScreen(CELL_ID_INFO_VALUE_ID);
+        }
+    }
+    /// @}
+
+    // For refresh SIM infomation
+    private final BroadcastReceiver mAllRecordsLoadedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int subid = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+            String action = intent.getAction();
+
+            if (TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED.equals(action)) {
+                Bundle extras = intent.getExtras();
+                if (extras == null) {
+                    return;
+                }
+                subid = extras.getInt(PhoneConstants.SUBSCRIPTION_KEY,
+                        SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+                if (mSubscriptionInfo.getSubscriptionId() == subid) {
+                    updatePhoneNumber();
+                }
+            }
+            Log.d(TAG, "action = " + action + ", subid = " + subid
+                    + ", SubscriptionId = " + mSubscriptionInfo.getSubscriptionId());
+        }
+    };
 }

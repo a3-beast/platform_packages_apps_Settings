@@ -166,7 +166,9 @@ public abstract class DeviceListPreferenceFragment extends
 
     @Override
     public void onDeviceAdded(CachedBluetoothDevice cachedDevice) {
+        Log.d(TAG, "onDeviceAdded, Device name is " + cachedDevice.getName());
         if (mDevicePreferenceMap.get(cachedDevice) != null) {
+            Log.d(TAG, "Device name " + cachedDevice.getName() + " already have preference");
             return;
         }
 
@@ -174,6 +176,7 @@ public abstract class DeviceListPreferenceFragment extends
         if (mLocalAdapter.getBluetoothState() != BluetoothAdapter.STATE_ON) return;
 
         if (mFilter.matches(cachedDevice.getDevice())) {
+            Log.d(TAG, "Device name " + cachedDevice.getName() + " create new preference");
             createDevicePreference(cachedDevice);
         }
     }
@@ -239,6 +242,7 @@ public abstract class DeviceListPreferenceFragment extends
 
     @Override
     public void onScanningStateChanged(boolean started) {
+        Log.d(TAG, "onScanningStateChanged " + started);
         if (!started && mScanEnabled) {
             mLocalAdapter.startScanning(true);
         }

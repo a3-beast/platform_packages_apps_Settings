@@ -168,6 +168,50 @@
             android:layout_height="wrap_content"
             android:text="@string/device_info_not_available"/>
 
+        <!-- M: CDMA SIM status start -->
+        <!-- MCC and MNC -->
+        <TextView
+            style="@style/device_info_dialog_label"
+            android:id="@+id/mcc_mnc_id_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/status_mcc_mnc"/>
+        <TextView
+            style="@style/device_info_dialog_value"
+            android:id="@+id/mcc_mnc_id_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/device_info_not_available"/>
+
+        <!-- SID and NID -->
+        <TextView
+            style="@style/device_info_dialog_label"
+            android:id="@+id/sid_nid_id_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/status_sid_nid"/>
+        <TextView
+            style="@style/device_info_dialog_value"
+            android:id="@+id/sid_nid_id_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/device_info_not_available"/>
+
+        <!-- Cell ID -->
+        <TextView
+            style="@style/device_info_dialog_label"
+            android:id="@+id/cell_id_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/status_cell_id"/>
+        <TextView
+            style="@style/device_info_dialog_value"
+            android:id="@+id/cell_id_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/device_info_not_available"/>
+        <!-- M: CDMA SIM status end -->
+
         <TextView
             style="@style/device_info_dialog_label"
             android:id="@+id/ims_reg_state_label"

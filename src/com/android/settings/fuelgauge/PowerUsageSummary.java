@@ -56,6 +56,7 @@ import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
 import com.android.settingslib.utils.PowerUtil;
 import com.android.settingslib.utils.StringUtil;
+import com.mediatek.settings.fuelguage.BackgroundPowerSavingPreferenceController;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -249,6 +250,8 @@ public class PowerUsageSummary extends PowerUsageBase implements OnLongClickList
                 BatteryTipListener */);
         controllers.add(mBatteryTipPreferenceController);
         controllers.add(new BatteryPercentagePreferenceController(context));
+        /// M: Add for Background power saving
+        controllers.add(new BackgroundPowerSavingPreferenceController(context));
         return controllers;
     }
 
@@ -472,12 +475,6 @@ public class PowerUsageSummary extends PowerUsageBase implements OnLongClickList
                 @Override
                 public List<String> getNonIndexableKeys(Context context) {
                     List<String> niks = super.getNonIndexableKeys(context);
-
-                    final BatteryPercentagePreferenceController controller =
-                            new BatteryPercentagePreferenceController(context);
-                    if (!controller.isAvailable()) {
-                        niks.add(controller.getPreferenceKey());
-                    }
                     niks.add(KEY_BATTERY_SAVER_SUMMARY);
                     return niks;
                 }

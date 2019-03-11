@@ -20,6 +20,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.text.InputType;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
@@ -58,6 +59,12 @@ class EditPinPreference extends CustomEditTextPreference {
             editText.setInputType(InputType.TYPE_CLASS_NUMBER |
                     InputType.TYPE_NUMBER_VARIATION_PASSWORD);
             editText.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+
+            /// M: Disable the auto fill function. @{
+            Log.d("EditPinPreference", "onBindDialogView, disable auto fill.");
+            editText.setImportantForAutofill(
+                    View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+            /// @}
         }
     }
 

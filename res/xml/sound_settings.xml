@@ -223,4 +223,10 @@
                     android:dependency="work_use_personal_sounds" />
 
     </com.android.settings.widget.WorkOnlyCategory>
+
+    <!-- M: Sound Enhancement -->
+    <Preference
+        android:fragment="com.mediatek.audioprofile.SoundEnhancement"
+        android:key="sound_enhancement"
+        android:title="@string/sound_enhancement_title" />
 </PreferenceScreen>

@@ -123,6 +123,19 @@ public final class CredentialStorage extends Activity {
      */
     private int mRetriesRemaining = -1;
 
+    /// M: ALPS02468105 repeat show dialog will lead memory leak @{
+    private static AlertDialog sResetDialog = null;
+    private static AlertDialog sUnlockDialog = null;
+    private boolean mIsMarkKeyAsUserSelectable = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        sResetDialog = null;
+        sUnlockDialog = null;
+    }
+    /// @}
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -151,6 +164,20 @@ public final class CredentialStorage extends Activity {
         }
     }
 
+    /// M: ALPS02468105 repeat show dialog will lead memory leak @{
+    protected void onDestroy() {
+        if (sResetDialog != null) {
+            sResetDialog.dismiss();
+            sResetDialog = null;
+        }
+        if (sUnlockDialog != null) {
+            sUnlockDialog.dismiss();
+            sUnlockDialog = null;
+        }
+        super.onDestroy();
+    }
+    /// @}
+
     /**
      * Based on the current state of the KeyStore and key guard, try to
      * make progress on unlocking or installing to the keystore.
@@ -176,7 +203,10 @@ public final class CredentialStorage extends Activity {
                     return;
                 }
                 installIfAvailable();
-                finish();
+                if(!mIsMarkKeyAsUserSelectable) {
+                    Log.e(TAG, "handleUnlockOrInstall, mIsMarkKeyAsUserSelectable");
+                    finish();
+                }
                 return;
             }
         }
@@ -220,7 +250,6 @@ public final class CredentialStorage extends Activity {
             PrivateKeyInfo pki = PrivateKeyInfo.getInstance(bIn.readObject());
             String algOid = pki.getAlgorithmId().getAlgorithm().getId();
             String algName = new AlgorithmId(new ObjectIdentifier(algOid)).getName();
-
             return KeyChain.isBoundKeyAlgorithm(algName);
         } catch (IOException e) {
             Log.e(TAG, "Failed to parse key data");
@@ -240,7 +269,6 @@ public final class CredentialStorage extends Activity {
         mInstallBundle = null;
 
         final int uid = bundle.getInt(Credentials.EXTRA_INSTALL_AS_UID, KeyStore.UID_SELF);
-
         if (uid != KeyStore.UID_SELF && !UserHandle.isSameUser(uid, Process.myUid())) {
             int dstUserId = UserHandle.getUserId(uid);
             int myUserId = UserHandle.myUserId();
@@ -251,7 +279,6 @@ public final class CredentialStorage extends Activity {
                         + " may only target wifi uids");
                 return;
             }
-
             Intent installIntent = new Intent(ACTION_INSTALL)
                     .setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT)
                     .putExtras(bundle);
@@ -282,8 +309,10 @@ public final class CredentialStorage extends Activity {
             // on internal implementation details of KeyChain and imitating its functionality
             // rather than delegating to KeyChain for the certificate installation.
             if (uid == Process.SYSTEM_UID || uid == KeyStore.UID_SELF) {
+                Log.e(TAG, "installIfAvailable, MarkKeyAsUserSelectable");
                 new MarkKeyAsUserSelectable(
                         key.replaceFirst("^" + Credentials.USER_PRIVATE_KEY, "")).execute();
+                mIsMarkKeyAsUserSelectable = true;
             }
         }
 
@@ -309,10 +338,33 @@ public final class CredentialStorage extends Activity {
             }
         }
 
+        /// M: Add WAPI CERTIFICATE. @{
+        if (bundle.containsKey(Credentials.EXTRA_WAPI_USER_CERTIFICATE_NAME)) {
+            String caListName = bundle.getString(Credentials.EXTRA_WAPI_USER_CERTIFICATE_NAME);
+            byte[] caListData = bundle.getByteArray(Credentials.EXTRA_WAPI_USER_CERTIFICATE_DATA);
+            if (caListName != null && !mKeyStore.put(
+                    caListName, caListData, uid, KeyStore.FLAG_ENCRYPTED)) {
+                Log.d(TAG, "Failed to install " + caListName + " as user " + uid);
+                return;
+             }
+        }
+
+        if (bundle.containsKey(Credentials.EXTRA_WAPI_SERVER_CERTIFICATE_NAME)) {
+            String caListName = bundle.getString(
+                  Credentials.EXTRA_WAPI_SERVER_CERTIFICATE_NAME);
+            byte[] caListData = bundle.getByteArray(
+                  Credentials.EXTRA_WAPI_SERVER_CERTIFICATE_DATA);
+            if (caListName != null && !mKeyStore.put(
+                    caListName, caListData, uid, KeyStore.FLAG_ENCRYPTED)) {
+                Log.d(TAG, "Failed to install " + caListName + " as user " + uid);
+                return;
+            }
+        }
+        /// @}
+
         // Send the broadcast.
         Intent broadcast = new Intent(KeyChain.ACTION_KEYCHAIN_CHANGED);
         sendBroadcast(broadcast);
-
         setResult(RESULT_OK);
     }
 
@@ -324,14 +376,19 @@ public final class CredentialStorage extends Activity {
         private boolean mResetConfirmed;
 
         private ResetDialog() {
-            AlertDialog dialog = new AlertDialog.Builder(CredentialStorage.this)
+            /// M: ALPS02468105 repeat show dialog will lead memory leak @{
+            if (sResetDialog == null) {
+                AlertDialog dialog = new AlertDialog.Builder(CredentialStorage.this)
                     .setTitle(android.R.string.dialog_alert_title)
                     .setMessage(R.string.credentials_reset_hint)
                     .setPositiveButton(android.R.string.ok, this)
                     .setNegativeButton(android.R.string.cancel, this)
                     .create();
-            dialog.setOnDismissListener(this);
-            dialog.show();
+                sResetDialog = dialog;
+                dialog.setOnDismissListener(this);
+                dialog.show();
+            }
+            /// @}
         }
 
         @Override
@@ -341,6 +398,8 @@ public final class CredentialStorage extends Activity {
 
         @Override
         public void onDismiss(DialogInterface dialog) {
+            /// M: ALPS02468105 repeat show dialog will lead memory leak
+            sResetDialog = null;
             if (mResetConfirmed) {
                 mResetConfirmed = false;
                 if (confirmKeyGuard(CONFIRM_CLEAR_SYSTEM_CREDENTIAL_REQUEST)) {
@@ -424,6 +483,13 @@ public final class CredentialStorage extends Activity {
                 Thread.currentThread().interrupt();
                 return false;
             }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            Log.e(TAG, "onPostExecute ");
+            mIsMarkKeyAsUserSelectable = false;
+            finish();
         }
     }
 
@@ -538,16 +604,20 @@ public final class CredentialStorage extends Activity {
             mOldPassword.setVisibility(View.VISIBLE);
             mOldPassword.addTextChangedListener(this);
             mError = (TextView) view.findViewById(R.id.error);
-
-            AlertDialog dialog = new AlertDialog.Builder(CredentialStorage.this)
+            /// M: ALPS02468105 repeat show dialog will lead memory leak @{
+            if (sUnlockDialog == null) {
+                AlertDialog dialog = new AlertDialog.Builder(CredentialStorage.this)
                     .setView(view)
                     .setTitle(R.string.credentials_unlock)
                     .setPositiveButton(android.R.string.ok, this)
                     .setNegativeButton(android.R.string.cancel, this)
                     .create();
-            dialog.setOnDismissListener(this);
-            dialog.show();
-            mButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                sUnlockDialog = dialog;
+                dialog.setOnDismissListener(this);
+                dialog.show();
+            }
+            /// @}
+            mButton = sUnlockDialog.getButton(DialogInterface.BUTTON_POSITIVE);
             mButton.setEnabled(false);
         }
 
@@ -571,6 +641,8 @@ public final class CredentialStorage extends Activity {
 
         @Override
         public void onDismiss(DialogInterface dialog) {
+            /// M: ALPS02468105 repeat show dialog will lead memory leak
+            sUnlockDialog = null;
             if (mUnlockConfirmed) {
                 mUnlockConfirmed = false;
                 mError.setVisibility(View.VISIBLE);

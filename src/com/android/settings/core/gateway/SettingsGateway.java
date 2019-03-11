@@ -136,7 +136,13 @@ import com.android.settings.wifi.WifiInfo;
 import com.android.settings.wifi.WifiSettings;
 import com.android.settings.wifi.calling.WifiCallingSettings;
 import com.android.settings.wifi.p2p.WifiP2pSettings;
-import com.android.settings.wifi.tether.WifiTetherSettings;
+import com.mediatek.hdmi.HdmiSettings;
+import com.mediatek.nfc.NfcServiceStatus;
+import com.mediatek.nfc.NfcSettings;
+import com.mediatek.settings.advancedcalling.AdvancedCallingOptions;
+import com.mediatek.settings.advancedcalling.AdvancedWifiCallingSettings;
+import com.mediatek.settings.DrmSettings;
+import com.mediatek.settings.sim.SmartCallFwdFragment;
 
 public class SettingsGateway {
 
@@ -152,7 +158,6 @@ public class SettingsGateway {
             SimSettings.class.getName(),
             TetherSettings.class.getName(),
             WifiP2pSettings.class.getName(),
-            WifiTetherSettings.class.getName(),
             BackgroundCheckSummary.class.getName(),
             VpnSettings.class.getName(),
             DateTimeSettings.class.getName(),
@@ -263,6 +268,20 @@ public class SettingsGateway {
             DirectoryAccessDetails.class.getName(),
             ToggleBackupSettingFragment.class.getName(),
             PreviouslyConnectedDeviceDashboardFragment.class.getName(),
+
+            /// M: HDMI Settings fragment
+            HdmiSettings.class.getName(),
+            /// M: Drm Settings fragment
+            DrmSettings.class.getName(),
+            /// M: nfc Settings fragment
+            NfcSettings.class.getName(),
+            /// M: Nfc Service Status fragment
+            NfcServiceStatus.class.getName(),
+            /// M: Advanced Calling and Wifi Settings
+            AdvancedCallingOptions.class.getName(),
+            AdvancedWifiCallingSettings.class.getName(),
+            /// M: SmartCallForward setting fragment
+            SmartCallFwdFragment.class.getName()
     };
 
     public static final String[] SETTINGS_FOR_RESTRICTED = {

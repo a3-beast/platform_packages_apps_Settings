@@ -4,7 +4,7 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := SettingsRoboTests
+LOCAL_MODULE := MtkSettingsRoboTests
 
 LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
@@ -16,7 +16,7 @@ LOCAL_JAVA_LIBRARIES := \
     mockito-robolectric-prebuilt \
     truth-prebuilt
 
-LOCAL_INSTRUMENTATION_FOR := Settings
+LOCAL_INSTRUMENTATION_FOR := MtkSettings
 
 LOCAL_MODULE_TAGS := optional
 
@@ -27,10 +27,10 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
 #############################################################
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := RunSettingsRoboTests
+LOCAL_MODULE := RunMtkSettingsRoboTests
 
 LOCAL_JAVA_LIBRARIES := \
-    SettingsRoboTests \
+    MtkSettingsRoboTests \
     robolectric_android-all-stub \
     Robolectric_all-target \
     mockito-robolectric-prebuilt \

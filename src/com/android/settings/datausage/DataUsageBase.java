@@ -14,6 +14,8 @@
 
 package com.android.settings.datausage;
 
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
 import static android.net.ConnectivityManager.TYPE_ETHERNET;
 
 import android.content.Context;
@@ -41,7 +43,7 @@ import com.android.settingslib.NetworkPolicyEditor;
  */
 @Deprecated
 public abstract class DataUsageBase extends SettingsPreferenceFragment {
-    private static final String TAG = "DataUsageBase";
+    public static final String TAG = "DataUsageBase";
     private static final String ETHERNET = "ethernet";
 
     protected final TemplatePreference.NetworkServices services =
@@ -63,6 +65,18 @@ public abstract class DataUsageBase extends SettingsPreferenceFragment {
         services.mTelephonyManager = TelephonyManager.from(context);
         services.mSubscriptionManager = SubscriptionManager.from(context);
         services.mUserManager = UserManager.get(context);
+        /// M: for [SIM Hot Swap] @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getActivity().getApplicationContext());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                if (getActivity() != null) {
+                    Log.d(TAG, "onSimHotSwap, finish Activity~~");
+                    getActivity().finish();
+                }
+            }
+        });
+        /// @}
     }
 
     @Override
@@ -76,6 +90,10 @@ public abstract class DataUsageBase extends SettingsPreferenceFragment {
     }
 
     protected boolean isMobileDataAvailable(int subId) {
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            Log.w(TAG, "isMobileDataAvailable INVALID_SUBSCRIPTION_ID");
+            return false;
+        }
         return services.mSubscriptionManager.getActiveSubscriptionInfo(subId) != null;
     }
 
@@ -86,7 +104,8 @@ public abstract class DataUsageBase extends SettingsPreferenceFragment {
 
     private boolean isDataEnabled(int subId) {
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
-            return true;
+            Log.w(TAG, "isDataEnabled INVALID_SUBSCRIPTION_ID");
+            return false;
         }
         return services.mTelephonyManager.getDataEnabled(subId);
     }
@@ -128,5 +147,17 @@ public abstract class DataUsageBase extends SettingsPreferenceFragment {
 
         // only show ethernet when both hardware present and traffic has occurred
         return hasEthernet && ethernetBytes > 0;
+    }
+
+    ///------------------------------------MTK------------------------------------------------
+
+    /// M: for [SIM Hot Swap]
+    private SimHotSwapHandler mSimHotSwapHandler;
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        /// M: for [Sim Hot Swap]
+        mSimHotSwapHandler.unregisterOnSimHotSwap();
     }
 }

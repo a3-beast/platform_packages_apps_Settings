@@ -23,6 +23,8 @@ import android.os.Bundle;
 import android.provider.SearchIndexableResource;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceGroup;
+import android.util.Log;
+
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
 import com.android.settings.SettingsActivity;
@@ -34,6 +36,9 @@ import com.android.settings.widget.SwitchBar;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
 import com.android.settingslib.location.RecentLocationApps;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.ISettingsMiscExt;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,7 +68,9 @@ public class LocationSettings extends DashboardFragment {
     private static final String TAG = "LocationSettings";
 
     private LocationSwitchBarController mSwitchBarController;
-
+    ///M: For opeator's requirement, add AGPRS feature @{
+    private static ISettingsMiscExt mExt;
+    /// @}
     @Override
     public int getMetricsCategory() {
         return MetricsEvent.LOCATION;
@@ -71,6 +78,7 @@ public class LocationSettings extends DashboardFragment {
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
+        Log.i(TAG, "onActivityCreatedd");
         super.onActivityCreated(savedInstanceState);
         final SettingsActivity activity = (SettingsActivity) getActivity();
         final SwitchBar switchBar = activity.getSwitchBar();
@@ -78,6 +86,7 @@ public class LocationSettings extends DashboardFragment {
                 R.string.location_settings_master_switch_title);
         mSwitchBarController = new LocationSwitchBarController(activity, switchBar, getLifecycle());
         switchBar.show();
+        mExt.customizeAGPRS(getPreferenceScreen());
     }
 
     @Override
@@ -124,6 +133,13 @@ public class LocationSettings extends DashboardFragment {
         controllers.add(
                 new LocationServicePreferenceController(context, fragment, lifecycle));
         controllers.add(new LocationFooterPreferenceController(context, lifecycle));
+        Log.i(TAG, "add addPreferenceControllerdd");
+        mExt = UtilsExt.getMiscPlugin(context);
+        ///M: For opeator's requirement, add AGPRS feature @{
+        mExt.addPreferenceController(controllers,
+                mExt.createPreferenceController(context, lifecycle));
+        /// @}
+
         return controllers;
     }
 

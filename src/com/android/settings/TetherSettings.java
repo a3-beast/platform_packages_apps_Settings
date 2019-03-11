@@ -36,6 +36,7 @@ import android.os.Handler;
 import android.os.UserManager;
 import android.support.v14.preference.SwitchPreference;
 import android.support.v7.preference.Preference;
+import android.util.Log;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.datausage.DataSaverBackend;
@@ -78,6 +79,8 @@ public class TetherSettings extends RestrictedSettingsFragment
     private boolean mMassStorageActive;
 
     private boolean mBluetoothEnableForTether;
+
+
     private boolean mUnavailable;
 
     private DataSaverBackend mDataSaverBackend;
@@ -118,10 +121,9 @@ public class TetherSettings extends RestrictedSettingsFragment
             getPreferenceScreen().removeAll();
             return;
         }
-
         final Activity activity = getActivity();
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        if (adapter != null) {
+        if (adapter != null && adapter.getState() == BluetoothAdapter.STATE_ON) {
             adapter.getProfileProxy(activity.getApplicationContext(), mProfileServiceListener,
                     BluetoothProfile.PAN);
         }
@@ -162,11 +164,17 @@ public class TetherSettings extends RestrictedSettingsFragment
     @Override
     public void onDestroy() {
         mDataSaverBackend.remListener(this);
-
+        /// M: Avoid memory leak
+        BluetoothPan pan = mBluetoothPan.get();
+        /// @}
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothProfile profile = mBluetoothPan.getAndSet(null);
         if (profile != null && adapter != null) {
             adapter.closeProfileProxy(BluetoothProfile.PAN, profile);
+            /// M: Avoid memory leak
+            mBluetoothPan.set(null);
+            pan = null;
+            /// @}
         }
 
         super.onDestroy();
@@ -192,6 +200,7 @@ public class TetherSettings extends RestrictedSettingsFragment
         @Override
         public void onReceive(Context content, Intent intent) {
             String action = intent.getAction();
+            Log.d(TAG, "TetherChangeReceiver onReceive  action=" + action);
             if (action.equals(ConnectivityManager.ACTION_TETHER_STATE_CHANGED)) {
                 // TODO - this should understand the interface types
                 ArrayList<String> available = intent.getStringArrayListExtra(
@@ -232,6 +241,7 @@ public class TetherSettings extends RestrictedSettingsFragment
                 }
                 updateState();
             }
+            onReceiveExt(action, intent);
         }
     }
 
@@ -268,7 +278,9 @@ public class TetherSettings extends RestrictedSettingsFragment
 
         filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(BluetoothPan.ACTION_CONNECTION_STATE_CHANGED);
         activity.registerReceiver(mTetherChangeReceiver, filter);
+
 
         if (intent != null) mTetherChangeReceiver.onReceive(activity, intent);
 
@@ -296,6 +308,7 @@ public class TetherSettings extends RestrictedSettingsFragment
 
     private void updateState(String[] available, String[] tethered,
             String[] errored) {
+
         updateUsbState(available, tethered, errored);
         updateBluetoothState();
     }
@@ -350,6 +363,11 @@ public class TetherSettings extends RestrictedSettingsFragment
             mBluetoothTether.setEnabled(false);
         } else {
             BluetoothPan bluetoothPan = mBluetoothPan.get();
+            Log.d(TAG, "updateBluetoothState bluetoothPan= " + bluetoothPan + " btState= " + btState
+                    + " mDataSaverEnabled=" + mDataSaverEnabled);
+            if (bluetoothPan != null) {
+                Log.d(TAG, "updateBluetoothState tetheringon= " + bluetoothPan.isTetheringOn());
+            }
             if (btState == BluetoothAdapter.STATE_ON && bluetoothPan != null
                     && bluetoothPan.isTetheringOn()) {
                 mBluetoothTether.setChecked(true);
@@ -360,6 +378,14 @@ public class TetherSettings extends RestrictedSettingsFragment
             }
         }
     }
+
+  /*  @Override
+    public boolean onPreferenceChange(Preference preference, Object value) {
+        /// M : Hotspot settings @{
+        mTetherSettingsExt.onPreferenceChange(preference, value);
+        return true;
+        /// @}
+    }*/
 
     public static boolean isProvisioningNeededButUnavailable(Context context) {
         return (TetherUtil.isProvisioningNeeded(context)
@@ -384,6 +410,11 @@ public class TetherSettings extends RestrictedSettingsFragment
         if (choice == TETHERING_BLUETOOTH) {
             // Turn on Bluetooth first.
             BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+            if (mBluetoothPan.get() == null) {
+                adapter.getProfileProxy(getActivity().getApplicationContext(),
+                         mProfileServiceListener, BluetoothProfile.PAN);
+             }
+             /// @}
             if (adapter.getState() == BluetoothAdapter.STATE_OFF) {
                 mBluetoothEnableForTether = true;
                 adapter.enable();
@@ -425,9 +456,21 @@ public class TetherSettings extends RestrictedSettingsFragment
     private BluetoothProfile.ServiceListener mProfileServiceListener =
             new BluetoothProfile.ServiceListener() {
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
+            Log.d(TAG, "onServiceConnected ");
             mBluetoothPan.set((BluetoothPan) proxy);
         }
         public void onServiceDisconnected(int profile) {
+            Log.d(TAG, "onServiceDisconnected ");
+            /// M: Avoid reference leak when BT is off
+            BluetoothPan pan = mBluetoothPan.get();
+            if (pan != null) {
+                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                if (adapter != null) {
+                    adapter.closeProfileProxy(BluetoothProfile.PAN, pan);
+                }
+                pan = null;
+            }
+            /// @}
             mBluetoothPan.set(null);
         }
     };
@@ -457,4 +500,11 @@ public class TetherSettings extends RestrictedSettingsFragment
             }
         }
     }
+
+    private void onReceiveExt(String action, Intent intent) {
+        if (action.equals(BluetoothPan.ACTION_CONNECTION_STATE_CHANGED)) {
+            updateState();
+        }
+    }
 }
+

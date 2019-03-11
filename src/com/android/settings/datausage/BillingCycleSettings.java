@@ -166,6 +166,7 @@ public class BillingCycleSettings extends DataUsageBase implements
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         if (mEnableDataLimit == preference) {
+            Log.d(TAG, "onDataLimitPreferenceChange newValue: " + newValue);
             boolean enabled = (Boolean) newValue;
             if (!enabled) {
                 setPolicyLimitBytes(LIMIT_DISABLED);
@@ -315,6 +316,7 @@ public class BillingCycleSettings extends DataUsageBase implements
 
             // to fix the overflow problem
             final long correctedBytes = Math.min(MAX_DATA_LIMIT_BYTES, bytes);
+            Log.d(TAG, "onClick, isLimit = " + isLimit + " correctedBytes = " + correctedBytes);
             if (isLimit) {
                 editor.setPolicyLimitBytes(template, correctedBytes);
             } else {
@@ -391,6 +393,7 @@ public class BillingCycleSettings extends DataUsageBase implements
 
             final int cycleDay = mCycleDayPicker.getValue();
             final String cycleTimezone = new Time().timezone;
+            Log.d(TAG, "onClick, cycleDay = " + cycleDay + ", cycleTimezone = " + cycleTimezone);
             editor.setPolicyCycleDay(template, cycleDay, cycleTimezone);
             target.updateDataUsage();
         }
@@ -406,11 +409,19 @@ public class BillingCycleSettings extends DataUsageBase implements
         public static final float FLOAT = 1.2f;
 
         public static void show(BillingCycleSettings parent) {
-            if (!parent.isAdded()) return;
+            /// M: Debug Logs
+            if (!parent.isAdded()) {
+                Log.d(TAG, "Parent not added, Cannot ShowDialog");
+                return;
+            }
 
             final NetworkPolicy policy = parent.services.mPolicyEditor
                     .getPolicy(parent.mNetworkTemplate);
-            if (policy == null) return;
+            /// M: Debug Logs
+            if (policy == null) {
+                Log.d(TAG, "NetworkPolicy is null, Cannot ShowDialog");
+                return;
+            }
 
             final Resources res = parent.getResources();
             final long minLimitBytes = (long) (policy.warningBytes * FLOAT);
@@ -425,6 +436,7 @@ public class BillingCycleSettings extends DataUsageBase implements
             final ConfirmLimitFragment dialog = new ConfirmLimitFragment();
             dialog.setArguments(args);
             dialog.setTargetFragment(parent, 0);
+            Log.d(TAG, "show ConfirmLimitFragment"); /// M: Debug Logs
             dialog.show(parent.getFragmentManager(), TAG_CONFIRM_LIMIT);
         }
 
@@ -441,20 +453,38 @@ public class BillingCycleSettings extends DataUsageBase implements
                     .setTitle(R.string.data_usage_limit_dialog_title)
                     .setMessage(R.string.data_usage_limit_dialog_mobile)
                     .setPositiveButton(android.R.string.ok, this)
-                    .setNegativeButton(android.R.string.cancel, null)
+                    .setNegativeButton(android.R.string.cancel, this)
                     .create();
         }
 
         @Override
         public void onClick(DialogInterface dialog, int which) {
             final BillingCycleSettings target = (BillingCycleSettings) getTargetFragment();
-            if (which != DialogInterface.BUTTON_POSITIVE) return;
+            if (which != DialogInterface.BUTTON_POSITIVE) {
+                /// M: for ALPS02818840, should reset Pref if user click cancel
+                if (target != null) {
+                    target.updatePrefs();
+                }
+                /// @}
+                return;
+            }
+
             final long limitBytes = getArguments().getLong(EXTRA_LIMIT_BYTES);
             if (target != null) {
+                Log.d(TAG, "onClick, limitBytes = " + limitBytes);
                 target.setPolicyLimitBytes(limitBytes);
             }
             target.getPreferenceManager().getSharedPreferences().edit()
                     .putBoolean(KEY_SET_DATA_LIMIT, true).apply();
         }
+        /// M: Reset Pref if dialog is cancelled(Don't click cancel or OK button.)
+        @Override
+        public void onCancel(DialogInterface dialog) {
+            final BillingCycleSettings target = (BillingCycleSettings) getTargetFragment();
+            if (target != null) {
+                target.updatePrefs();
+            }
+        }
+        /// @}
     }
 }

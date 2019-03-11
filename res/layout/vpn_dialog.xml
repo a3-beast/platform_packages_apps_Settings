@@ -32,6 +32,7 @@
                     android:text="@string/vpn_name"
                     android:labelFor="@+id/name"/>
             <EditText style="@style/vpn_value" android:id="@+id/name"
+                    android:textDirection="locale"
                     android:inputType="textCapWords"/>
 
             <TextView style="@style/vpn_label"
@@ -45,7 +46,8 @@
             <TextView style="@style/vpn_label"
                     android:text="@string/vpn_server"
                     android:labelFor="@+id/server"/>
-            <EditText style="@style/vpn_value" android:id="@+id/server"/>
+            <EditText style="@style/vpn_value" android:id="@+id/server"
+                    android:textDirection="locale"/>
 
             <CheckBox style="@style/vpn_value" android:id="@+id/mppe"
                     android:text="@string/vpn_mppe"
@@ -62,6 +64,7 @@
                         android:labelFor="@+id/l2tp_secret"/>
                 <EditText style="@style/vpn_value" android:id="@+id/l2tp_secret"
                         android:password="true"
+                        android:textDirection="locale"
                         android:hint="@string/vpn_not_used"/>
             </LinearLayout>
 
@@ -74,12 +77,14 @@
                         android:text="@string/vpn_ipsec_identifier"
                         android:labelFor="@+id/ipsec_identifier"/>
                 <EditText style="@style/vpn_value" android:id="@+id/ipsec_identifier"
+                        android:textDirection="locale"
                         android:hint="@string/vpn_not_used"/>
 
                 <TextView style="@style/vpn_label"
                         android:text="@string/vpn_ipsec_secret"
                         android:labelFor="@+id/ipsec_secret"/>
                 <EditText style="@style/vpn_value" android:id="@+id/ipsec_secret"
+                        android:textDirection="locale"
                         android:password="true"/>
             </LinearLayout>
 
@@ -133,12 +138,14 @@
                     android:text="@string/vpn_dns_servers"
                     android:labelFor="@+id/dns_servers"/>
             <EditText style="@style/vpn_value" android:id="@+id/dns_servers"
+                    android:textDirection="locale"
                     android:hint="@string/vpn_not_used"/>
 
             <TextView style="@style/vpn_label"
                     android:text="@string/vpn_routes"
                     android:labelFor="@+id/routes"/>
             <EditText style="@style/vpn_value" android:id="@+id/routes"
+                    android:textDirection="locale"
                     android:hint="@string/vpn_not_used"/>
         </LinearLayout>
 
@@ -151,12 +158,14 @@
             <TextView style="@style/vpn_label"
                     android:text="@string/vpn_username"
                     android:labelFor="@+id/username"/>
-            <EditText style="@style/vpn_value" android:id="@+id/username"/>
+            <EditText style="@style/vpn_value" android:id="@+id/username"
+                    android:textDirection="locale"/>
 
             <TextView style="@style/vpn_label"
                     android:text="@string/vpn_password"
                     android:labelFor="@+id/password"/>
             <EditText style="@style/vpn_value" android:id="@+id/password"
+                    android:textDirection="locale"
                     android:password="true"/>
 
             <CheckBox style="@style/vpn_value" android:id="@+id/save_login"

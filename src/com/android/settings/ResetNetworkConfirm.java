@@ -51,6 +51,14 @@ import com.android.settings.enterprise.ActionDisabledByAdminDialogHelper;
 import com.android.settings.network.ApnSettings;
 import com.android.settingslib.RestrictedLockUtils;
 
+import com.android.settingslib.utils.ThreadUtils;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.ISettingsMiscExt;
+
+import static com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
+import com.mediatek.ims.internal.MtkImsManager;
+import com.android.settingslib.utils.ThreadUtils;
+
 /**
  * Confirm and execute a reset of the network settings to a clean "just out of the box"
  * state.  Multiple confirmations are required: first, a general "are you sure
@@ -63,6 +71,8 @@ import com.android.settingslib.RestrictedLockUtils;
  */
 public class ResetNetworkConfirm extends InstrumentedFragment {
 
+    /// M: Add debug log
+    private static final String TAG = "ResetNetwork";
     private View mContentView;
     private int mSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     @VisibleForTesting boolean mEraseEsim;
@@ -115,32 +125,32 @@ public class ResetNetworkConfirm extends InstrumentedFragment {
             // TODO maybe show a progress screen if this ends up taking a while and won't let user
             // go back until the tasks finished.
             Context context = getActivity();
-
+            Log.v(TAG, "begin reset ConnectivityManager");
             ConnectivityManager connectivityManager = (ConnectivityManager)
                     context.getSystemService(Context.CONNECTIVITY_SERVICE);
             if (connectivityManager != null) {
                 connectivityManager.factoryReset();
             }
-
+            Log.v(TAG, "begin reset WifiManager");
             WifiManager wifiManager = (WifiManager)
                     context.getSystemService(Context.WIFI_SERVICE);
             if (wifiManager != null) {
                 wifiManager.factoryReset();
             }
-
+            Log.v(TAG, "begin reset TelephonyManager");
             TelephonyManager telephonyManager = (TelephonyManager)
                     context.getSystemService(Context.TELEPHONY_SERVICE);
             if (telephonyManager != null) {
                 telephonyManager.factoryReset(mSubId);
             }
-
+            Log.v(TAG, "begin reset NetworkPolicyManager");
             NetworkPolicyManager policyManager = (NetworkPolicyManager)
                     context.getSystemService(Context.NETWORK_POLICY_SERVICE);
             if (policyManager != null) {
                 String subscriberId = telephonyManager.getSubscriberId(mSubId);
                 policyManager.factoryReset(subscriberId);
             }
-
+            Log.v(TAG, "begin reset BluetoothManager");
             BluetoothManager btManager = (BluetoothManager)
                     context.getSystemService(Context.BLUETOOTH_SERVICE);
             if (btManager != null) {
@@ -150,22 +160,55 @@ public class ResetNetworkConfirm extends InstrumentedFragment {
                 }
             }
 
+            /// M: Pass phone id to IMS so it can do factory reset to a specific card @{
+            Log.v(TAG, "begin reset ImsManager");
+            resetImsNetwork(context, mSubId);
+            /// @}
+            /** M: Google original code phased out to adapt to our feature
             ImsManager.factoryReset(context);
+             */
+
+            Log.v(TAG, "begin reset Apn");
             restoreDefaultApn(context);
             esimFactoryReset(context, context.getPackageName());
+
+
+
             // There has been issues when Sms raw table somehow stores orphan
             // fragments. They lead to garbled message when new fragments come
             // in and combied with those stale ones. In case this happens again,
             // user can reset all network settings which will clean up this table.
             cleanUpSmsRawTable(context);
+            Log.v(TAG, "ret end");
+            //M: Add interface to update changes via WifiOffload Service if doing network reset.
+            ISettingsMiscExt miscExt = UtilsExt.getMiscPlugin(getContext());
+            miscExt.doWosFactoryReset();
+            Toast.makeText(context, R.string.reset_network_complete_toast, Toast.LENGTH_SHORT)
+                    .show();
         }
     };
+
+
+    /**
+     * M: Reset IMS network for specific sim card
+     */
+   private void resetImsNetwork(Context context, int sub) {
+        int phoneId;
+        if (sub == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            phoneId = 0;
+        } else {
+            phoneId = SubscriptionManager.getPhoneId(mSubId);
+        }
+        MtkImsManager.factoryReset(context, phoneId);
+    }
+
 
     private void cleanUpSmsRawTable(Context context) {
         ContentResolver resolver = context.getContentResolver();
         Uri uri = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, "raw/permanentDelete");
         resolver.delete(uri, null, null);
     }
+
 
     @VisibleForTesting
     void esimFactoryReset(Context context, String packageName) {

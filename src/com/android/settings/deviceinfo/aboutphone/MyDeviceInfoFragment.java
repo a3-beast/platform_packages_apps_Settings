@@ -54,6 +54,9 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.widget.EntityHeaderController;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.mediatek.settings.deviceinfo.BasebandVersion2PreferenceController;
+import com.mediatek.settings.deviceinfo.CustomizeBuildVersionPreferenceController;
+import com.mediatek.settings.deviceinfo.CustomizeSystemUpdatePreferenceController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,7 +108,8 @@ public class MyDeviceInfoFragment extends DashboardFragment
             Lifecycle lifecycle) {
         final List<AbstractPreferenceController> controllers = new ArrayList<>();
         controllers.add(new EmergencyInfoPreferenceController(context));
-        controllers.add(new PhoneNumberPreferenceController(context));
+        /// M: Revise for updating phone number.
+        controllers.add(new PhoneNumberPreferenceController(context, lifecycle));
         controllers.add(new BrandedAccountPreferenceController(context));
         DeviceNamePreferenceController deviceNamePreferenceController =
                 new DeviceNamePreferenceController(context);
@@ -115,9 +119,11 @@ public class MyDeviceInfoFragment extends DashboardFragment
             lifecycle.addObserver(deviceNamePreferenceController);
         }
         controllers.add(deviceNamePreferenceController);
-        controllers.add(new SimStatusPreferenceController(context, fragment));
+        /// M: Revise for updating carrier name.
+        controllers.add(new SimStatusPreferenceController(context, fragment, lifecycle));
         controllers.add(new DeviceModelPreferenceController(context, fragment));
-        controllers.add(new ImeiInfoPreferenceController(context, fragment));
+        /// M: Revise for updating IMEI.
+        controllers.add(new ImeiInfoPreferenceController(context, fragment, lifecycle));
         controllers.add(new FirmwareVersionPreferenceController(context, fragment));
         controllers.add(new IpAddressPreferenceController(context, lifecycle));
         controllers.add(new WifiMacAddressPreferenceController(context, lifecycle));
@@ -129,6 +135,12 @@ public class MyDeviceInfoFragment extends DashboardFragment
         controllers.add(new FccEquipmentIdPreferenceController(context));
         controllers.add(
                 new BuildNumberPreferenceController(context, activity, fragment, lifecycle));
+        /// M: Customize device info settings @{
+        controllers.add(new BasebandVersion2PreferenceController(context));
+        controllers.add(new CustomizeBuildVersionPreferenceController(context));
+        controllers.add(new CustomizeSystemUpdatePreferenceController(context,
+                UserManager.get(context)));
+        /// M: @}
         return controllers;
     }
 

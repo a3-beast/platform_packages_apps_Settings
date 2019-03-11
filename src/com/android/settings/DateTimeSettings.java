@@ -19,9 +19,12 @@ package com.android.settings;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.os.UserManager;
 import android.provider.SearchIndexableResource;
+import android.util.Log;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.dashboard.DashboardFragment;
@@ -38,18 +41,24 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.datetime.ZoneGetter;
+import com.mediatek.settings.datetime.AutoTimeExtPreferenceController;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 public class DateTimeSettings extends DashboardFragment implements
-        TimePreferenceController.TimePreferenceHost, DatePreferenceController.DatePreferenceHost {
+        TimePreferenceController.TimePreferenceHost, DatePreferenceController.DatePreferenceHost,
+        AutoTimeExtPreferenceController.GPSPreferenceHost, DialogInterface.OnCancelListener {
 
     private static final String TAG = "DateTimeSettings";
 
     // have we been launched from the setup wizard?
     protected static final String EXTRA_IS_FROM_SUW = "firstRun";
+
+    /// M: add for auto GPS time
+    private LocationManager mLocationManager = null;
+    private boolean isGPSSupport;
 
     @Override
     public int getMetricsCategory() {
@@ -63,11 +72,21 @@ public class DateTimeSettings extends DashboardFragment implements
 
     @Override
     protected int getPreferenceScreenResId() {
-        return R.xml.date_time_prefs;
+        Log.d(TAG, "getPreferenceScreenResId, isGPSSupport= " + isGPSSupport);
+        /// M: Use RestrictedListPreference replace RestrictedSwitchPreference if GPS time support.
+        if(isGPSSupport) {
+            return R.xml.date_time_ext_prefs;
+        } else {
+            return R.xml.date_time_prefs;
+        }
     }
 
     @Override
     public void onAttach(Context context) {
+        /// M: add for auto GPS time @{
+        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        isGPSSupport = (mLocationManager.getProvider(LocationManager.GPS_PROVIDER) != null);
+        /// @}
         super.onAttach(context);
         getLifecycle().addObserver(new TimeChangeListenerMixin(context, this));
     }
@@ -82,9 +101,16 @@ public class DateTimeSettings extends DashboardFragment implements
         final AutoTimeZonePreferenceController autoTimeZonePreferenceController =
                 new AutoTimeZonePreferenceController(
                         activity, this /* UpdateTimeAndDateCallback */, isFromSUW);
-        final AutoTimePreferenceController autoTimePreferenceController =
-                new AutoTimePreferenceController(
-                        activity, this /* UpdateTimeAndDateCallback */);
+        /// M: add auto GPS time if it support, or use the default. @{
+        final AutoTimePreferenceController autoTimePreferenceController;
+        if(isGPSSupport) {
+            autoTimePreferenceController = new AutoTimeExtPreferenceController(
+                    activity, this /* UpdateTimeAndDateCallback */);
+        } else {
+            autoTimePreferenceController = new AutoTimePreferenceController(
+                    activity, this /* UpdateTimeAndDateCallback */);
+        }
+        /// @}
         final AutoTimeFormatPreferenceController autoTimeFormatPreferenceController =
                 new AutoTimeFormatPreferenceController(
                         activity, this /* UpdateTimeAndDateCallback */);
@@ -117,6 +143,11 @@ public class DateTimeSettings extends DashboardFragment implements
             case TimePreferenceController.DIALOG_TIMEPICKER:
                 return use(TimePreferenceController.class)
                         .buildTimePicker(getActivity());
+            /// M: add for auto GPS time. @{
+            case AutoTimeExtPreferenceController.DIALOG_GPS_CONFIRM:
+                return use(AutoTimeExtPreferenceController.class)
+                        .buildGPSConfirmDialog(getActivity());
+            /// @}
             default:
                 throw new IllegalArgumentException();
         }
@@ -129,6 +160,10 @@ public class DateTimeSettings extends DashboardFragment implements
                 return MetricsEvent.DIALOG_DATE_PICKER;
             case TimePreferenceController.DIALOG_TIMEPICKER:
                 return MetricsEvent.DIALOG_TIME_PICKER;
+            /// M: add for auto GPS time. @{
+            case AutoTimeExtPreferenceController.DIALOG_GPS_CONFIRM:
+                return MetricsEvent.DATE_TIME;
+            /// @}
             default:
                 return 0;
         }
@@ -144,6 +179,22 @@ public class DateTimeSettings extends DashboardFragment implements
     public void showDatePicker() {
         showDialog(DatePreferenceController.DIALOG_DATEPICKER);
     }
+
+    /// M: add for auto GPS time @{
+    @Override
+    public void showGPSConfirmDialog() {
+        removeDialog(AutoTimeExtPreferenceController.DIALOG_GPS_CONFIRM);
+        showDialog(AutoTimeExtPreferenceController.DIALOG_GPS_CONFIRM);
+        setOnCancelListener(this);
+    }
+
+    public void onCancel(DialogInterface arg0) {
+        if(isGPSSupport) {
+            Log.d(TAG, "onCancel Dialog, Reset AutoTime Settings");
+            use(AutoTimeExtPreferenceController.class).reSetAutoTimePref();
+        }
+    }
+    /// @}
 
     private static class SummaryProvider implements SummaryLoader.SummaryProvider {
 

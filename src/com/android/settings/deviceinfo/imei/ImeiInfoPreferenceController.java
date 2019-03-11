@@ -20,13 +20,24 @@ import static android.telephony.TelephonyManager.PHONE_TYPE_CDMA;
 
 import android.app.Fragment;
 import android.content.Context;
+/// M: Add for updating IMEI.
+import android.os.Bundle;
 import android.support.annotation.VisibleForTesting;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
+/// M: Add for updating IMEI.
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import com.android.settings.R;
 import com.android.settings.core.PreferenceControllerMixin;
+/// M: Add for updating IMEI. @{
+import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.android.settingslib.core.lifecycle.LifecycleObserver;
+import com.android.settingslib.core.lifecycle.events.OnCreate;
+import com.android.settingslib.core.lifecycle.events.OnDestroy;
+/// @}
 import com.android.settingslib.deviceinfo.AbstractSimStatusImeiInfoPreferenceController;
 
 import java.util.ArrayList;
@@ -35,8 +46,11 @@ import java.util.List;
 /**
  * Controller that manages preference for single and multi sim devices.
  */
-public class ImeiInfoPreferenceController extends
-        AbstractSimStatusImeiInfoPreferenceController implements PreferenceControllerMixin {
+/// M: Revise for updating IMEI.
+public class ImeiInfoPreferenceController extends AbstractSimStatusImeiInfoPreferenceController
+        implements PreferenceControllerMixin, LifecycleObserver, OnCreate, OnDestroy {
+
+    private static final String TAG = "ImeiInfoPreferenceController";
 
     private static final String KEY_IMEI_INFO = "imei_info";
 
@@ -45,13 +59,26 @@ public class ImeiInfoPreferenceController extends
     private final List<Preference> mPreferenceList = new ArrayList<>();
     private final Fragment mFragment;
 
-    public ImeiInfoPreferenceController(Context context, Fragment fragment) {
+    /// M: Add for updating IMEI.
+    private final SubscriptionManager mSubscriptionManager;
+
+    /// M: Revise for updating IMEI. @{
+    public ImeiInfoPreferenceController(Context context, Fragment fragment, Lifecycle lifecycle) {
         super(context);
 
         mFragment = fragment;
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         mIsMultiSim = mTelephonyManager.getPhoneCount() > 1;
+
+        // Get subscription manager.
+        mSubscriptionManager = (SubscriptionManager) context.getSystemService(
+                Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+        // Add this controller into lifecycle.
+        if (lifecycle != null) {
+            lifecycle.addObserver(this);
+        }
     }
+    /// @}
 
     @Override
     public String getPreferenceKey() {
@@ -94,7 +121,8 @@ public class ImeiInfoPreferenceController extends
     }
 
     private void updatePreference(Preference preference, int simSlot) {
-        final int phoneType = mTelephonyManager.getPhoneType();
+        /// M: Get the phone type for the specified SIM slot.
+        final int phoneType = mTelephonyManager.getCurrentPhoneTypeForSlot(simSlot);
         if (phoneType == PHONE_TYPE_CDMA) {
             preference.setTitle(getTitleForCdmaPhone(simSlot));
             preference.setSummary(getMeid(simSlot));
@@ -124,4 +152,30 @@ public class ImeiInfoPreferenceController extends
     Preference createNewPreference(Context context) {
         return new Preference(context);
     }
+
+    /// M: Register listener for updating IMEI. @{
+    private final SubscriptionManager.OnSubscriptionsChangedListener mOnSubscriptionsChangeListener
+            = new SubscriptionManager.OnSubscriptionsChangedListener() {
+        @Override
+        public void onSubscriptionsChanged() {
+            Log.d(TAG, "onSubscriptionsChanged");
+            for (int simSlotNumber = 0; simSlotNumber < mPreferenceList.size(); simSlotNumber++) {
+                Preference imeiInfoPreference = mPreferenceList.get(simSlotNumber);
+                updatePreference(imeiInfoPreference, simSlotNumber);
+            }
+        }
+    };
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        // Register listener for updating IMEI.
+        mSubscriptionManager.addOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+    }
+
+    @Override
+    public void onDestroy() {
+        // Unregister listener.
+        mSubscriptionManager.removeOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+    }
+    /// @}
 }

@@ -121,9 +121,12 @@ public class ApnPreference extends Preference implements
             if (context != null) {
                 int pos = Integer.parseInt(getKey());
                 Uri url = ContentUris.withAppendedId(Telephony.Carriers.CONTENT_URI, pos);
+                /// M: for [Read Only APN]
                 Intent editIntent = new Intent(Intent.ACTION_EDIT, url);
+                editIntent.putExtra("readOnly", !mEditable);
                 editIntent.putExtra(ApnSettings.SUB_ID, mSubId);
                 context.startActivity(editIntent);
+                /// @}
             }
         }
     }
@@ -138,5 +141,22 @@ public class ApnPreference extends Preference implements
 
     public void setSubId(int subId) {
         mSubId = subId;
+    }
+
+    ///----------------------------------------MTK------------------------------------------------
+    private boolean mEditable;
+
+    public int getSubId() {
+        return mSubId;
+    }
+
+    /**
+     * M: for [Read Only APN]
+     * set whether the APN is editable, as some preset Apn can be be edited
+     * @param isEditable
+     */
+    public void setApnEditable(boolean isEditable) {
+        Log.d(TAG, "setApnEditable " + isEditable);
+        mEditable = isEditable;
     }
 }

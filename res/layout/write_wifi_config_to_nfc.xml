@@ -47,6 +47,7 @@
                       android:singleLine="true"
                       android:password="true"
                       android:maxLength="63"
+                      android:textDirection="locale"
                       android:imeOptions="flagForceAscii" />
             <TextView
                     style="@style/wifi_item_label"

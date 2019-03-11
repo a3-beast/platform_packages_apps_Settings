@@ -27,6 +27,7 @@ import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceViewHolder;
 import android.text.Html;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.widget.ImageView;
@@ -103,8 +104,10 @@ public final class BluetoothDevicePreference extends GearPreference implements
     @Override
     protected void onPrepareForRemoval() {
         super.onPrepareForRemoval();
+        Log.d(TAG, "onPrepareForRemoval");
         mCachedDevice.unregisterCallback(this);
         if (mDisconnectDialog != null) {
+            Log.d(TAG, "dismiss dialog");
             mDisconnectDialog.dismiss();
             mDisconnectDialog = null;
         }
@@ -202,10 +205,12 @@ public final class BluetoothDevicePreference extends GearPreference implements
         if (mCachedDevice.isConnected()) {
             metricsFeatureProvider.action(context,
                     MetricsEvent.ACTION_SETTINGS_BLUETOOTH_DISCONNECT);
+            Log.d(TAG, mCachedDevice.getName() + " askDisconnect");
             askDisconnect();
         } else if (bondState == BluetoothDevice.BOND_BONDED) {
             metricsFeatureProvider.action(context,
                     MetricsEvent.ACTION_SETTINGS_BLUETOOTH_CONNECT);
+            Log.d(TAG, mCachedDevice.getName() + " connect");
             mCachedDevice.connect(true);
         } else if (bondState == BluetoothDevice.BOND_NONE) {
             metricsFeatureProvider.action(context,
@@ -214,6 +219,7 @@ public final class BluetoothDevicePreference extends GearPreference implements
                 metricsFeatureProvider.action(context,
                         MetricsEvent.ACTION_SETTINGS_BLUETOOTH_PAIR_DEVICES_WITHOUT_NAMES);
             }
+            Log.d(TAG, mCachedDevice.getName() + " pair");
             pair();
         }
     }

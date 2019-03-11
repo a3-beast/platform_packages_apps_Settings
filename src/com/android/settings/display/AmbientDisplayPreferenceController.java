@@ -23,6 +23,7 @@ import com.android.internal.hardware.AmbientDisplayConfiguration;
 import com.android.settings.R;
 import com.android.settings.core.PreferenceControllerMixin;
 import com.android.settingslib.core.AbstractPreferenceController;
+import com.mediatek.settings.FeatureOption;
 
 public class AmbientDisplayPreferenceController extends AbstractPreferenceController implements
         PreferenceControllerMixin {
@@ -41,7 +42,8 @@ public class AmbientDisplayPreferenceController extends AbstractPreferenceContro
 
     @Override
     public boolean isAvailable() {
-        return mConfig.available();
+        /// M: If support Alway on display, remove AmbientDisplay
+        return mConfig.available() && !FeatureOption.MTK_AOD_SUPPORT;
     }
 
     @Override

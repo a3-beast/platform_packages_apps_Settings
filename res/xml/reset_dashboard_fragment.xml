@@ -34,6 +34,15 @@
         android:key="reset_app_prefs"
         android:title="@string/reset_app_preferences" />
 
+    <!--M: add DRM Settings start-->
+    <Preference
+        android:key="drm_settings"
+        android:title="@string/drm_settings_title"
+        android:order="-25"
+        android:summary="@string/drm_settings_summary"
+        android:fragment="com.mediatek.settings.DrmSettings"/>
+    <!--M: add DRM Settings end-->
+
     <!-- Factory reset -->
     <com.android.settingslib.RestrictedPreference
         android:key="factory_reset"

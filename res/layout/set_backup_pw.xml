@@ -33,6 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:singleLine="true"
+            android:textDirection="locale"
             android:password="true" />
 
     <TextView
@@ -48,6 +49,7 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:singleLine="true"
+            android:textDirection="locale"
             android:password="true" />
 
     <TextView
@@ -63,6 +65,7 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:singleLine="true"
+            android:textDirection="locale"
             android:password="true" />
 
     <Button

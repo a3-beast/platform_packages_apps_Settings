@@ -43,6 +43,7 @@
                 android:layout_height="wrap_content"
                 android:scrollHorizontally="true"
                 android:capitalize="none"
+                android:textDirection="locale"
                 android:autoText="false" />
 
         <TextView
@@ -59,6 +60,7 @@
                 android:layout_height="wrap_content"
                 android:scrollHorizontally="true"
                 android:capitalize="none"
+                android:textDirection="locale"
                 android:autoText="false" />
 
         <TextView
@@ -76,6 +78,7 @@
                 android:layout_height="wrap_content"
                 android:scrollHorizontally="true"
                 android:capitalize="none"
+                android:textDirection="locale"
                 android:autoText="false" />
 
         <TextView
@@ -93,6 +96,7 @@
                 android:layout_height="wrap_content"
                 android:scrollHorizontally="true"
                 android:capitalize="none"
+                android:textDirection="locale"
                 android:autoText="false" />
 
         <Button android:id="@+id/sendbroadcast"

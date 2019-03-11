@@ -40,6 +40,7 @@ import android.security.Credentials;
 import android.security.KeyStore;
 import android.support.annotation.VisibleForTesting;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -64,6 +65,9 @@ import com.android.settings.R;
 import com.android.settingslib.Utils;
 import com.android.settingslib.utils.ThreadUtils;
 import com.android.settingslib.wifi.AccessPoint;
+
+import com.mediatek.settings.wifi.Utf8ByteLengthFilter;
+import com.mediatek.settings.wifi.WifiConfigControllerExt;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -171,6 +175,10 @@ public class WifiConfigController implements TextWatcher,
     private TextView mSsidView;
 
     private Context mContext;
+    /// M: Add mtk feature EAP multi sim feature @{
+    private WifiConfigControllerExt mWifiConfigControllerExt;
+    private static final int SSID_MAX_LEN = 32;
+    /// @}
 
     public WifiConfigController(WifiConfigUiBase parent, View view, AccessPoint accessPoint,
             int mode) {
@@ -184,6 +192,8 @@ public class WifiConfigController implements TextWatcher,
 
         mContext = mConfigUi.getContext();
         final Resources res = mContext.getResources();
+        /// M: Init WifiConfigControllerExt
+        mWifiConfigControllerExt = new WifiConfigControllerExt(this, mConfigUi, mView);
 
         mLevels = res.getStringArray(R.array.wifi_signal);
         if (Utils.isWifiOnly(mContext) || !mContext.getResources().getBoolean(
@@ -231,6 +241,8 @@ public class WifiConfigController implements TextWatcher,
 
             mSsidView = (TextView) mView.findViewById(R.id.ssid);
             mSsidView.addTextChangedListener(this);
+            /// M: Set input filter
+            mSsidView.setFilters(new InputFilter[] { new Utf8ByteLengthFilter(SSID_MAX_LEN) });
             mSecuritySpinner = ((Spinner) mView.findViewById(R.id.security));
             mSecuritySpinner.setOnItemSelectedListener(this);
             mView.findViewById(R.id.type).setVisibility(View.VISIBLE);
@@ -244,13 +256,23 @@ public class WifiConfigController implements TextWatcher,
                     .setOnCheckedChangeListener(this);
 
             mConfigUi.setSubmitButton(res.getString(R.string.wifi_save));
+
+            /// M: modify to solve CR:ALPS01851640 @{
+            if (mPasswordView == null) {
+                mPasswordView = (TextView) mView.findViewById(R.id.password);
+                mPasswordView.addTextChangedListener(this);
+                ((CheckBox) mView.findViewById(R.id.show_password))
+                    .setOnCheckedChangeListener(this);
+            }
+            /// @}
         } else {
             if (!mAccessPoint.isPasspointConfig()) {
                 mConfigUi.setTitle(mAccessPoint.getSsid());
             } else {
                 mConfigUi.setTitle(mAccessPoint.getConfigName());
             }
-
+            /// M: Add mtk feature extends views
+            mWifiConfigControllerExt.addViews(mConfigUi, mAccessPoint.getSecurityString(false));
             ViewGroup group = (ViewGroup) mView.findViewById(R.id.info);
 
             boolean showAdvancedFields = false;
@@ -366,7 +388,9 @@ public class WifiConfigController implements TextWatcher,
                         }
                     }
 
+                    /** M: Google original code witch conflicts with MTK code
                     addRow(group, R.string.wifi_security, mAccessPoint.getSecurityString(false));
+                    */
                     mView.findViewById(R.id.ip_fields).setVisibility(View.GONE);
                 }
                 if (mAccessPoint.isSaved() || mAccessPoint.isActive()
@@ -387,6 +411,8 @@ public class WifiConfigController implements TextWatcher,
 
         // After done view show and hide, request focus from parent view
         mView.findViewById(R.id.l_wifidialog).requestFocus();
+      /// M: Add mtk feature config views
+        mWifiConfigControllerExt.addWifiConfigView(mMode != WifiConfigUiBase.MODE_VIEW);
     }
 
     @VisibleForTesting
@@ -454,6 +480,10 @@ public class WifiConfigController implements TextWatcher,
                            && !isValidPsk(mPasswordView.getText().toString())))) {
             passwordInvalid = true;
         }
+        /// M: Check whether password invalid
+        passwordInvalid = mWifiConfigControllerExt.enableSubmitIfAppropriate(mPasswordView,
+                mAccessPointSecurity, passwordInvalid);
+
         if ((mSsidView != null && mSsidView.length() == 0)
                 // If Accesspoint is not saved, apply passwordInvalid check
                 || ((mAccessPoint == null || !mAccessPoint.isSaved()) && passwordInvalid
@@ -544,6 +574,15 @@ public class WifiConfigController implements TextWatcher,
             config.hiddenSSID = mAccessPoint.getConfig().hiddenSSID;
         }
 
+        /// ALPS03484854 M:If the user modify a network manually and it's hiddenSSID config is true,
+        /// assume that it is hidden. @{
+        if (mAccessPoint != null && mAccessPoint.getConfig() != null
+                && mAccessPoint.getConfig().hiddenSSID == true) {
+            Log.d(TAG, "set hiddenSSID as true for " + mAccessPoint.getSsidStr());
+            config.hiddenSSID = true;
+        }
+        /// @}
+
         config.shared = mSharedCheckBox.isChecked();
 
         switch (mAccessPointSecurity) {
@@ -585,6 +624,8 @@ public class WifiConfigController implements TextWatcher,
                 config.allowedKeyManagement.set(KeyMgmt.IEEE8021X);
                 config.enterpriseConfig = new WifiEnterpriseConfig();
                 int eapMethod = mEapMethodSpinner.getSelectedItemPosition();
+                /// M: Get EAP method
+                eapMethod = mWifiConfigControllerExt.getEapMethod(eapMethod);
                 int phase2Method = mPhase2Spinner.getSelectedItemPosition();
                 config.enterpriseConfig.setEapMethod(eapMethod);
                 switch (eapMethod) {
@@ -691,9 +732,18 @@ public class WifiConfigController implements TextWatcher,
                     config.enterpriseConfig.setPassword(mPasswordView.getText().toString());
                 }
                 break;
+                /// M: Add for WAPI @{
+            case WifiConfigControllerExt.SECURITY_WAPI_PSK:
+            case WifiConfigControllerExt.SECURITY_WAPI_CERT:
+                break;
+            /// @}
             default:
                 return null;
         }
+
+        /// M: Set wifi config for mtk features
+        mWifiConfigControllerExt.setConfig(config,
+                mAccessPointSecurity, mPasswordView, mEapMethodSpinner);
 
         config.setIpConfiguration(
                 new IpConfiguration(mIpAssignment, mProxySettings,
@@ -838,6 +888,12 @@ public class WifiConfigController implements TextWatcher,
     }
 
     private void showSecurityFields() {
+        /// M: ShowSecurityFields for mtk feature
+        if (mWifiConfigControllerExt.showSecurityFields(mAccessPointSecurity
+                , mMode != WifiConfigUiBase.MODE_VIEW)) {
+            return;
+        }
+
         if (mAccessPointSecurity == AccessPoint.SECURITY_NONE) {
             mView.findViewById(R.id.security_fields).setVisibility(View.GONE);
             return;
@@ -865,6 +921,9 @@ public class WifiConfigController implements TextWatcher,
 
         if (mEapMethodSpinner == null) {
             mEapMethodSpinner = (Spinner) mView.findViewById(R.id.method);
+            ///M: for CMCC WLAN feature.@{
+            mWifiConfigControllerExt.setEapmethodSpinnerAdapter();
+            /// }@
             mEapMethodSpinner.setOnItemSelectedListener(this);
             if (Utils.isWifiOnly(mContext) || !mContext.getResources().getBoolean(
                     com.android.internal.R.bool.config_eap_sim_based_auth_supported)) {
@@ -911,6 +970,9 @@ public class WifiConfigController implements TextWatcher,
                 int phase2Method = enterpriseConfig.getPhase2Method();
                 mEapMethodSpinner.setSelection(eapMethod);
                 showEapFieldsByMethod(eapMethod);
+                /// M: Set EAP method spinner selection
+                mWifiConfigControllerExt.setEapMethodSelection(mEapMethodSpinner, eapMethod);
+
                 switch (eapMethod) {
                     case Eap.PEAP:
                         switch (phase2Method) {
@@ -976,6 +1038,15 @@ public class WifiConfigController implements TextWatcher,
         } else {
             showEapFieldsByMethod(mEapMethodSpinner.getSelectedItemPosition());
         }
+
+        /// M: for CMCC WLAN feature.@{
+        mWifiConfigControllerExt.setEapMethodFields(mMode != WifiConfigUiBase.MODE_VIEW);
+        /// @}
+
+        /// M: Add for EAP SIM slot selection @{
+        mWifiConfigControllerExt.showEapSimSlotByMethod(
+                mEapMethodSpinner.getSelectedItemPosition());
+        /// @}
     }
 
     /**
@@ -1202,6 +1273,8 @@ public class WifiConfigController implements TextWatcher,
                 mProxyPortView.addTextChangedListener(this);
                 mProxyExclusionListView = (TextView) mView.findViewById(R.id.proxy_exclusionlist);
                 mProxyExclusionListView.addTextChangedListener(this);
+                /// M: set text of proxy exclusion list
+                mWifiConfigControllerExt.setProxyText(mView);
             }
             if (config != null) {
                 ProxyInfo proxyProperties = config.getHttpProxy();
@@ -1363,6 +1436,8 @@ public class WifiConfigController implements TextWatcher,
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         if (parent == mSecuritySpinner) {
             mAccessPointSecurity = position;
+            /// M: Get current access point security.
+            mAccessPointSecurity = mWifiConfigControllerExt.getSecurity(mAccessPointSecurity);
             showSecurityFields();
         } else if (parent == mEapMethodSpinner || parent == mEapCaCertSpinner) {
             showSecurityFields();

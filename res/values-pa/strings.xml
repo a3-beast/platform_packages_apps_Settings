@@ -393,7 +393,7 @@
     <string name="security_passwords_title" msgid="2881269890053568809">"ਪਰਦੇਦਾਰੀ"</string>
     <string name="disabled_by_administrator_summary" msgid="1601828700318996341">"ਪ੍ਰਸ਼ਾਸਕ ਦੁਆਰਾ ਅਯੋਗ ਬਣਾਇਆ ਗਿਆ"</string>
     <string name="security_status_title" msgid="5848766673665944640">"ਸੁਰੱਖਿਆ ਸਥਿਤੀ"</string>
-    <string name="security_dashboard_summary" msgid="6757421634477554939">"ਸਕ੍ਰੀਨ ਲਾਕ, ਫਿੰਗਰਪ੍ਰਿੰਟ"</string>
+    <string name="security_dashboard_summary" msgid="6757421634477554939">"ਸਕ੍ਰੀਨ  ਲਾਕ , ਫਿੰਗਰਪ੍ਰਿੰਟ"</string>
     <string name="security_dashboard_summary_no_fingerprint" msgid="8129641548372335540">"ਸਕ੍ਰੀਨ  ਲਾਕ"</string>
     <string name="security_settings_fingerprint_preference_title" msgid="2488725232406204350">"ਫਿੰਗਰਪ੍ਰਿੰਟ"</string>
     <string name="fingerprint_manage_category_title" msgid="8293801041700001681">"ਫਿੰਗਰਪ੍ਰਿੰਟਸ ਵਿਵਸਥਿਤ ਕਰੋ"</string>
@@ -856,7 +856,6 @@
     <string name="wifi_ap_choose_auto" msgid="2677800651271769965">"ਸਵੈਚਲਿਤ"</string>
     <string name="wifi_ap_choose_2G" msgid="8724267386885036210">"2.4 GHz ਬੈਂਡ"</string>
     <string name="wifi_ap_choose_5G" msgid="8813128641914385634">"5.0 GHz ਬੈਂਡ"</string>
-    <string name="wifi_ap_prefer_5G" msgid="2501070491623803139">"5.0 GHz ਬੈਂਡ ਨੂੰ ਤਰਜੀਹ ਦਿੱਤੀ ਗਈ"</string>
     <string name="wifi_ap_2G" msgid="8378132945192979364">"2.4 GHz"</string>
     <string name="wifi_ap_5G" msgid="4020713496716329468">"5.0 GHz"</string>
     <string name="wifi_ap_band_select_one" msgid="3476254666116431650">"ਵਾਈ-ਫਾਈ ਹੌਟਸਪੌਟ ਲਈ ਘੱਟੋ-ਘੱਟ ਇੱਕ ਬੈਂਡ ਚੁਣੋ:"</string>
@@ -1068,7 +1067,7 @@
     <string name="color_mode_option_natural" msgid="5013837483986772758">"ਕੁਦਰਤੀ"</string>
     <string name="color_mode_option_boosted" msgid="8588223970257287524">"ਵਧਾਇਆ ਗਿਆ"</string>
     <string name="color_mode_option_saturated" msgid="4569683960058798843">"ਪਰਿਪੂਰਨ ਕੀਤਾ ਗਿਆ"</string>
-    <string name="color_mode_option_automatic" msgid="7996505473528529568">"ਅਨੁਕੂਲਨਯੋਗ"</string>
+    <string name="color_mode_option_automatic" msgid="8781254568140509331">"ਸਵੈਚਲਿਤ"</string>
     <string name="color_mode_summary_natural" msgid="6624188642920403099">"ਸਿਰਫ਼ ਸਟੀਕ ਰੰਗ ਵਰਤੋ"</string>
     <string name="color_mode_summary_automatic" msgid="4669516973360709431">"ਸਪਸ਼ਟ ਅਤੇ ਸਟੀਕ ਰੰਗਾਂ ਵਿਚਕਾਰ ਵਿਵਸਥਿਤ ਕਰੋ"</string>
     <string name="accelerometer_summary_on" product="tablet" msgid="429982132339828942">"ਟੈਬਲੈੱਟ ਨੂੰ ਘੁੰਮਾਉਣ ਵੇਲੇ ਆਪਣੇ ਆਪ ਦਿਸ਼ਾਮਾਨ \'ਤੇ ਬਦਲੋ"</string>
@@ -1097,11 +1096,11 @@
     <string name="auto_brightness_very_high_summary" msgid="4551003097086220709">"ਬੈਟਰੀ ਵਰਤੋਂ ਵਧ ਜਾਵੇਗੀ"</string>
     <string name="auto_brightness_disclaimer" msgid="871436423746343406">"ਉਪਲਬਧ ਲਾਈਟ ਲਈ ਚਮਕ ਦੇ ਪੱਧਰ ਨੂੰ ਸੁਯੋਗ ਬਣਾਓ। ਇਸ ਵਿਸ਼ੇਸ਼ਤਾ ਦੇ ਚਾਲੂ ਹੋਣ \'ਤੇ ਵੀ ਤੁਸੀਂ ਚਮਕ ਨੂੰ ਅਸਥਾਈ ਤੌਰ \'ਤੇ ਵਿਵਸਥਿਤ ਕਰ ਸਕਦੇ ਹੋ।"</string>
     <string name="auto_brightness_description" msgid="7310335517128283729">"ਤੁਹਾਡੇ ਸਕ੍ਰੀਨ ਦੀ ਚਮਕ ਸਵੈਚਲਿਤ ਤੌਰ \'ਤੇ ਵਾਤਾਵਰਣ ਅਤੇ ਤੁਹਾਡੇ ਵੱਲੋਂ ਕੀਤੀਆਂ ਜਾਣ ਵਾਲੀਆਂ ਸਰਗਰਮੀ ਦੇ ਮੁਤਾਬਕ ਵੱਧ-ਘੱਟ ਹੋਵੇਗੀ। ਢਲਨਹਾਰ ਚਮਕ ਨੂੰ ਤੁਹਾਡੀਆਂ ਤਰਜੀਹਾਂ ਬਾਰੇ ਸਿੱਖਣ ਵਿੱਚ ਮਦਦ ਕਰਨ ਲਈ ਤੁਸੀਂ ਸਲਾਈਡਰ ਨੂੰ ਹੱਥੀਂ ਹਿਲਾ ਸਕਦੇ ਹੋ।"</string>
-    <string name="night_display_title" msgid="2626451512200357686">"ਰਾਤ ਦੀ ਰੋਸ਼ਨੀ"</string>
-    <string name="night_display_text" msgid="1837277457033025056">"\'ਰਾਤ ਦੀ ਰੋਸ਼ਨੀ\' ਤੁਹਾਡੀ ਸਕ੍ਰੀਨ ਨੂੰ ਭੂਰੇ ਪੀਲੇ ਰੰਗ ਦੀ ਭਾਹ ਦਿੰਦੀ ਹੈ। ਇਸ ਨਾਲ ਮੱਧਮ ਰੋਸ਼ਨੀ ਵਿੱਚ ਤੁਹਾਡੀ ਸਕ੍ਰੀਨ ਨੂੰ ਦੇਖਣਾ ਜਾਂ ਪੜ੍ਹਨਾ ਵਧੇਰੇ ਆਸਾਨ ਹੋ ਜਾਂਦਾ ਹੈ ਅਤੇ ਤੁਹਾਨੂੰ ਵਧੇਰੇ ਆਸਾਨੀ ਨਾਲ ਸੌਣ ਵਿੱਚ ਮਦਦ ਮਿਲ ਸਕਦੀ ਹੈ।"</string>
+    <string name="night_display_title" msgid="2626451512200357686">"ਰਾਤਰੀ ਲਾਈਟ"</string>
+    <string name="night_display_text" msgid="1837277457033025056">"ਰਾਤਰੀ ਲਾਈਟ ਤੁਹਾਡੀ ਸਕ੍ਰੀਨ ਨੂੰ ਭੂਰੇ ਪੀਲੇ ਰੰਗ ਦੀ ਭਾਹ ਦਿੰਦੀ ਹੈ। ਇਸ ਨਾਲ ਮੱਧਮ ਰੋਸ਼ਨੀ ਵਿੱਚ ਤੁਹਾਡੀ ਸਕ੍ਰੀਨ ਨੂੰ ਦੇਖਣਾ ਜਾਂ ਪੜ੍ਹਨਾ ਵਧੇਰੇ ਆਸਾਨ ਹੋ ਜਾਂਦਾ ਹੈ ਅਤੇ ਤੁਹਾਨੂੰ ਵਧੇਰੇ ਆਸਾਨੀ ਨਾਲ ਸੌਣ ਵਿੱਚ ਮਦਦ ਮਿਲ ਸਕਦੀ ਹੈ।"</string>
     <string name="night_display_auto_mode_title" msgid="6574111412154833409">"ਸਮਾਂ-ਸੂਚੀ"</string>
     <string name="night_display_auto_mode_never" msgid="2483761922928753400">"ਕੋਈ ਨਹੀਂ"</string>
-    <string name="night_display_auto_mode_custom" msgid="2379394568898721765">"ਵਿਉਂਂਤੇ ਸਮੇਂ \'ਤੇ ਚਾਲੂ ਹੋ ਜਾਂਦੀ ਹੈ"</string>
+    <string name="night_display_auto_mode_custom" msgid="2379394568898721765">"ਵਿਉਂਂਤੀ ਸਮੇਂ ਤੇ ਚਾਲੂ ਹੋ ਜਾਂਦੀ ਹੈ"</string>
     <string name="night_display_auto_mode_twilight" msgid="589042813708244059">"ਸੂਰਜ ਡੁੱਬਣ ਤੋਂ ਲੈਕੇ ਸੂਰਜ ਚੜ੍ਹਨ ਤੱਕ ਚਾਲੂ ਰਹਿੰਦੀ ਹੈ"</string>
     <string name="night_display_start_time_title" msgid="8918016772613689584">"ਸ਼ੁਰੂੂਆਤ ਦਾ ਸਮਾਂ"</string>
     <string name="night_display_end_time_title" msgid="8286061578083519350">"ਸਮਾਪਤੀ ਦਾ ਸਮਾਂ"</string>
@@ -1384,7 +1383,7 @@
     <string name="storage_wizard_init_v2_external_summary" msgid="801198071793584445">"ਡੀਵਾਈਸਾਂ ਵਿਚਕਾਰ ਫ਼ਾਈਲਾਂ ਅਤੇ ਮੀਡੀਆ ਟ੍ਰਾਂਸਫ਼ਰ ਕਰਨ ਲਈ"</string>
     <string name="storage_wizard_init_v2_external_action" msgid="8662451480642784031">"ਪੋਰਟੇਬਲ ਸਟੋਰੇਜ"</string>
     <string name="storage_wizard_init_v2_later" msgid="1080613420170749130">"ਬਾਅਦ ਵਿੱਚ ਸੈੱਟਅੱਪ ਕਰੋ"</string>
-    <string name="storage_wizard_format_confirm_v2_title" msgid="5744790239994621663">"ਕੀ ਇਸ <xliff:g id="NAME">^1</xliff:g> ਨੂੰ ਫਾਰਮੈਟ ਕਰਨਾ ਹੈ?"</string>
+    <string name="storage_wizard_format_confirm_v2_title" msgid="5744790239994621663">"ਕੀ ਇਸ <xliff:g id="NAME">^1</xliff:g> ਫਾਰਮੈਟ ਕਰਨਾ ਹੈ?"</string>
     <string name="storage_wizard_format_confirm_v2_body" msgid="4614199613500900975">"ਇਸ <xliff:g id="NAME_0">^1</xliff:g> ਨੂੰ ਐਪਾਂ, ਫ਼ਾਈਲਾਂ ਅਤੇ ਮੀਡੀਆ ਸਟੋਰ ਕਰਨ ਲਈ ਫਾਰਮੈਟ ਕਰਨਾ ਪਵੇਗਾ। \n\nਫਾਰਮੈਟ ਕਰਨ ਨਾਲ <xliff:g id="NAME_1">^2</xliff:g> \'ਤੇ ਮੌਜੂਦ ਸਮੱਗਰੀ ਮਿਟ ਜਾਵੇਗੀ। ਸਮੱਗਰੀ ਗੁਆਉਣ ਤੋਂ ਬਚਣ ਲਈ, ਇਸ ਦਾ ਕਿਸੇ ਹੋਰ <xliff:g id="NAME_2">^3</xliff:g> ਜਾਂ ਡੀਵਾਈਸ \'ਤੇ ਬੈਕਅੱਪ ਲਓ।"</string>
     <string name="storage_wizard_format_confirm_v2_action" msgid="8258363472135537500">"<xliff:g id="NAME">^1</xliff:g> ਨੂੰ ਫਾਰਮੈਟ ਕਰੋ"</string>
     <string name="storage_wizard_migrate_v2_title" msgid="31406330052996898">"ਕੀ <xliff:g id="NAME">^1</xliff:g> ਵਿੱਚ ਸਮੱਗਰੀ ਨੂੰ ਲਿਜਾਣਾ ਹੈ?"</string>
@@ -3164,7 +3163,7 @@
     <string name="zen_sound_two_allowed" msgid="980491120444358550">"ਮਿਊਟ ਕੀਤਾ ਗਿਆ, ਪਰ <xliff:g id="SOUND_TYPE_0">%1$s</xliff:g> ਅਤੇ <xliff:g id="SOUND_TYPE_1">%2$s</xliff:g> ਚੱਲਣ ਦਿਓ"</string>
     <string name="zen_sound_three_allowed" msgid="3455767205934547985">"ਮਿਊਟ ਕੀਤਾ ਗਿਆ, ਪਰ <xliff:g id="SOUND_TYPE_0">%1$s</xliff:g>, <xliff:g id="SOUND_TYPE_1">%2$s</xliff:g> ਅਤੇ <xliff:g id="SOUND_TYPE_2">%3$s</xliff:g> ਚੱਲਣ ਦਿਓ"</string>
     <string name="zen_msg_event_reminder_title" msgid="5137894077488924820">"ਸੁਨੇਹੇ, ਇਵੈਂਟ ਅਤੇ ਯਾਦ-ਸੂਚਨਾਵਾਂ"</string>
-    <string name="zen_msg_event_reminder_footer" msgid="4376930591019535192">"ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ ਚਾਲੂ ਹੋਣ \'ਤੇ ਉਪਰੋਕਤ ਤੁਹਾਡੀ ਇਜਾਜ਼ਤ ਵਾਲੀਆਂ ਆਈਟਮਾਂ ਤੋਂ ਇਲਾਵਾ ਸੁਨੇਹੇ, ਯਾਦ-ਸੂਚਨਾਵਾਂ ਅਤੇ ਇਵੈਂਟ ਮਿਊਟ ਕੀਤੇ ਜਾਣਗੇ। ਤੁਸੀਂ ਆਪਣੇ ਦੋਸਤਾਂ, ਪਰਿਵਾਰਕ ਜਾਂ ਹੋਰ ਸੰਪਰਕਾਂ ਵੱਲੋਂ ਤੁਹਾਡੇ ਤੱਕ ਪਹੁੰਚ ਕਰਨ ਦੇਣ ਲਈ ਸੁਨੇਹੇ ਸੈਟਿੰਗਾਂ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰ ਸਕਦੇ ਹੋ।"</string>
+    <string name="zen_msg_event_reminder_footer" msgid="3242847055412790819">"ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ ਚਾਲੂ ਹੋਣ \'ਤੇ ਉਪਰੋਕਤ ਤੁਹਾਡੀ ਇਜਾਜ਼ਤ ਵਾਲੀਆਂ ਆਈਟਮਾਂ ਤੋਂ ਇਲਾਵਾ ਸੁਨੇਹੇ, ਯਾਦ-ਸੂਚਨਾਵਾਂ ਅਤੇ ਇਵੈਂਟ ਮਿਊਟ ਕੀਤੇ ਜਾਣਗੇ। ਤੁਸੀਂ ਆਪਣੇ ਦੋਸਤਾਂ, ਪਰਿਵਾਰਕ ਜਾਂ ਹੋਰ ਸੰਪਰਕਾਂ ਵੱਲੋਂ ਤੁਹਾਡੇ ਤੱਕ ਪਹੁੰਚ ਕਰਨ ਦੇਣ ਲਈ ਸੁਨੇਹੇ ਸੈਟਿੰਗਾਂ ਨੂੰ ਵਿਵਸਥਿਤ ਕਰ ਸਕਦੇ ਹੋ।"</string>
     <string name="zen_onboarding_ok" msgid="6131211000824433013">"ਹੋ ਗਿਆ"</string>
     <string name="zen_onboarding_settings" msgid="9046451821239946868">"ਸੈਟਿੰਗਾਂ"</string>
     <string name="zen_onboarding_new_setting_title" msgid="1893095176110470711">"ਸੂਚਨਾਵਾਂ ਦੇ ਕੋਈ ਦ੍ਰਿਸ਼ਟੀਗਤ ਸੰਕੇਤ ਜਾਂ ਧੁਨੀ ਨਹੀਂ"</string>
@@ -3444,7 +3443,7 @@
     <string name="storage_type_internal" msgid="6042049833565674948">"ਅੰਦਰੂਨੀ ਸਟੋਰੇਜ"</string>
     <string name="storage_type_external" msgid="7738894330670001898">"ਬਾਹਰੀ ਸਟੋਰੇਜ"</string>
     <string name="app_data_usage" msgid="7942375313697452803">"ਐਪ ਡਾਟਾ ਵਰਤੋਂ"</string>
-    <string name="data_summary_format" msgid="6213211533341068366">"<xliff:g id="DATE">%2$s</xliff:g> ਤੋਂ <xliff:g id="SIZE">%1$s</xliff:g> ਵਰਤਿਆ ਗਿਆ"</string>
+    <string name="data_summary_format" msgid="6213211533341068366">"<xliff:g id="SIZE">%1$s</xliff:g> <xliff:g id="DATE">%2$s</xliff:g> ਤੋਂ ਵਰਤਿਆ ਗਿਆ"</string>
     <string name="storage_used" msgid="7128074132917008743">"ਸਟੋਰੇਜ ਵਰਤੀ"</string>
     <string name="change" msgid="6657848623929839991">"ਬਦਲੋ"</string>
     <string name="change_storage" msgid="600475265207060436">"ਸਟੋਰੇਜ ਬਦਲੋ"</string>
@@ -3635,7 +3634,7 @@
     <string name="memory_maximum_usage" msgid="6513785462055278341">"ਅਧਿਕਤਮ ਵਰਤੋਂ"</string>
     <string name="no_data_usage" msgid="9131454024293628063">"ਕੋਈ  ਡਾਟਾ  ਨਹੀਂ ਵਰਤਿਆ"</string>
     <string name="zen_access_warning_dialog_title" msgid="1198189958031157142">"ਕੀ <xliff:g id="APP">%1$s</xliff:g> ਨੂੰ ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ ਤੱਕ ਪਹੁੰਚ ਦੀ ਆਗਿਆ ਦੇਣੀ ਹੈ?"</string>
-    <string name="zen_access_warning_dialog_summary" msgid="4015885767653010873">"ਐਪ \'ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ\' ਨੂੰ ਚਾਲੂ/ਬੰਦ ਕਰਨ ਅਤੇ ਸੰਬੰਧਿਤ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਬਦਲਾਵ ਕਰਨ ਵਿੱਚ ਸਮਰੱਥ ਹੋਵੇਗੀ।"</string>
+    <string name="zen_access_warning_dialog_summary" msgid="4015885767653010873">"ਐਪ ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ ਨੂੰ ਚਾਲੂ/ਬੰਦ ਕਰਨ ਅਤੇ ਸੰਬੰਧਿਤ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਬਦਲਾਵ ਕਰਨ ਵਿੱਚ ਸਮਰੱਥ ਹੋਵੇਗਾ।"</string>
     <string name="zen_access_disabled_package_warning" msgid="302820100078584431">"ਸੂਚਨਾ ਪਹੁੰਚ ਦੇ ਚਾਲੂ ਹੋਣ ਕਾਰਨ ਇਸ ਦਾ ਚਾਲੂ ਰਹਿਣਾ ਲਾਜ਼ਮੀ ਹੈ"</string>
     <string name="zen_access_revoke_warning_dialog_title" msgid="558779234015793950">"ਕੀ <xliff:g id="APP">%1$s</xliff:g> ਲਈ \'ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ\' \'ਤੇ ਪਹੁੰਚ ਰੱਦ ਕਰਨੀ ਹੈ?"</string>
     <string name="zen_access_revoke_warning_dialog_summary" msgid="5518216907304930148">"ਇਸ ਐਪ ਵੱਲੋਂ ਬਣਾਏ ਸਾਰੇ \'ਪਰੇਸ਼ਾਨ ਨਾ ਕਰੋ\' ਨਿਯਮ ਹਟਾ ਦਿੱਤੇ ਜਾਣਗੇ।"</string>
@@ -3889,9 +3888,9 @@
     <string name="notification_log_details_none" msgid="184131801230614059">"ਕੋਈ ਨਹੀਂਂ"</string>
     <string name="notification_log_details_ranking_null" msgid="244660392058720919">"ਰੈਕਿੰਗ ਔਬਜੈਕਟ ਗੁੰਮ ਹੈ।"</string>
     <string name="notification_log_details_ranking_none" msgid="599607025882587844">"ਰੈਕਿੰਗ ਔਬਜੈਕਟ ਵਿੱਚ ਇਹ ਕੁੰਜੀ ਸ਼ਾਮਲ ਨਹੀਂ ਹੈ।"</string>
-    <string name="display_cutout_emulation" msgid="7466869822418376317">"ਡਿਸਪਲੇ ਕੱਟਆਊਟ"</string>
+    <string name="display_cutout_emulation" msgid="6306593933746393170">"ਇੱਕ ਕੱਟਆਉਟ ਨਾਲ ਇੱਕ ਡਿਸਪਲੇ ਦੀ ਨਕਲ ਕਰੋ"</string>
     <string name="display_cutout_emulation_keywords" msgid="4495418317471622562">"ਡਿਸਪਲੇ ਕੱਟਆਊਟ, ਨੌਚ"</string>
-    <string name="display_cutout_emulation_device_default" msgid="7957250558326167503">"ਪੂਰਵ-ਨਿਰਧਾਰਤ ਡੀਵਾਈਸ"</string>
+    <string name="display_cutout_emulation_none" msgid="5144174674654097316">"ਕੋਈ ਨਹੀਂ"</string>
     <string name="special_access" msgid="3458780842491881155">"ਵਿਸ਼ੇਸ਼ ਐਪ ਪਹੁੰਚ"</string>
     <plurals name="special_access_summary" formatted="false" msgid="260765309935675867">
       <item quantity="one"><xliff:g id="COUNT">%d</xliff:g> ਐਪ ਅਣ-ਪ੍ਰਤੀਬੰਧਿਤ ਡਾਟੇ ਦੀ ਵਰਤੋਂ ਕਰ ਸਕਦੀ ਹੈ</item>

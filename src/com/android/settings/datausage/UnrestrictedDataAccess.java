@@ -226,7 +226,10 @@ public class UnrestrictedDataAccess extends SettingsPreferenceFragment
             logSpecialPermissionChange(whitelisted, accessPreference.mEntry.info.packageName);
             mDataSaverBackend.setIsWhitelisted(accessPreference.mEntry.info.uid,
                     accessPreference.mEntry.info.packageName, whitelisted);
-            accessPreference.mState.isDataSaverWhitelisted = whitelisted;
+            /// M: Add null check for mState
+            if (accessPreference.mState != null) {
+                accessPreference.mState.isDataSaverWhitelisted = whitelisted;
+            }
             return true;
         }
         return false;
@@ -281,7 +284,9 @@ public class UnrestrictedDataAccess extends SettingsPreferenceFragment
 
         @Override
         protected void onClick() {
-            if (mState.isDataSaverBlacklisted) {
+            //if (mState.isDataSaverBlacklisted) {
+            /// M: Add null check
+            if (mState != null && mState.isDataSaverBlacklisted) {
                 // app is blacklisted, launch App Data Usage screen
                 AppInfoDashboardFragment.startAppInfoFragment(AppDataUsage.class,
                     R.string.app_data_usage,

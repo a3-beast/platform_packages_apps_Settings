@@ -26,6 +26,7 @@ import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +45,7 @@ import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
  */
 abstract class BluetoothNameDialogFragment extends InstrumentedDialogFragment
         implements TextWatcher {
+    private static final String TAG = "BluetoothNameDialogFragment";
     private AlertDialog mAlertDialog;
     private Button mOkButton;
 
@@ -77,6 +79,7 @@ abstract class BluetoothNameDialogFragment extends InstrumentedDialogFragment
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreateDialog, getActivity() is " + getActivity());
         String deviceName = getDeviceName();
         if (savedInstanceState != null) {
             deviceName = savedInstanceState.getString(KEY_NAME, deviceName);

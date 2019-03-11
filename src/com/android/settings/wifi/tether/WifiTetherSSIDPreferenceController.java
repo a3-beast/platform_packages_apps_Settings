@@ -83,4 +83,11 @@ public class WifiTetherSSIDPreferenceController extends WifiTetherBasePreference
         preference.setText(mSSID);
         preference.setSummary(mSSID);
     }
+
+    /// M: Hotspot settings reset network will reset ssid @{
+    public void setSSID(String ssid) {
+        mSSID = ssid;
+        updateSsidDisplay((EditTextPreference) mPreference);
+    }
+    /// @}
 }

@@ -98,7 +98,7 @@ import com.android.settings.wallpaper.WallpaperTypeSettings;
 import com.android.settings.wfd.WifiDisplaySettings;
 import com.android.settings.wifi.ConfigureWifiSettings;
 import com.android.settings.wifi.WifiSettings;
-
+import com.mediatek.nfc.NfcSettings;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -193,6 +193,9 @@ public class SearchIndexableResourcesImpl implements SearchIndexableResources {
         addIndex(RecentLocationRequestSeeAllFragment.class);
         addIndex(PreviouslyConnectedDeviceDashboardFragment.class);
         addIndex(BluetoothDashboardFragment.class);
+        /// M: Add NFC setting when NFC addon support @{
+        addIndex(NfcSettings.class);
+        /// @}
     }
 
     @Override

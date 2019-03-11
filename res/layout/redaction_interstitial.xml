@@ -25,6 +25,10 @@
     settings:suwFooter="@layout/redaction_interstitial_footer"
     settings:suwHeaderText="@string/lock_screen_notifications_interstitial_title">
 
+<!-- M: Add for bug fix ALPS01826474 -->
+<ScrollView
+   android:layout_width="match_parent"
+   android:layout_height="match_parent">
     <LinearLayout
         style="@style/SuwContentFrame"
         android:layout_width="match_parent"
@@ -77,5 +81,7 @@
         </RadioGroup>
 
     </LinearLayout>
+
+</ScrollView>
 
 </com.android.setupwizardlib.GlifLayout>

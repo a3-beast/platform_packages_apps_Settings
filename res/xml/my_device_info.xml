@@ -71,18 +71,10 @@
         <intent android:action="android.settings.SHOW_REGULATORY_INFO"/>
     </Preference>
 
-    <!-- Safety & regulatory manual -->
-    <Preference
-        android:key="safety_info"
-        android:order="7"
-        android:title="@string/safety_and_regulatory_info">
-        <intent android:action="android.settings.SHOW_SAFETY_AND_REGULATORY_INFO"/>
-    </Preference>
-
     <!-- SIM status -->
     <Preference
         android:key="sim_status"
-        android:order="8"
+        android:order="7"
         android:title="@string/sim_status_title"
         settings:keywords="@string/keywords_sim_status"
         android:summary="@string/summary_placeholder"
@@ -137,6 +129,14 @@
         android:summary="@string/summary_placeholder"
         android:selectable="false"/>
 
+    <!-- Safety & regulatory manual -->
+    <Preference
+        android:key="safety_info"
+        android:order="39"
+        android:title="@string/safety_and_regulatory_info">
+        <intent android:action="android.settings.SHOW_SAFETY_AND_REGULATORY_INFO"/>
+    </Preference>
+
     <!-- Manual -->
     <Preference
         android:key="manual"
@@ -165,5 +165,22 @@
         android:title="@string/build_number"
         android:summary="@string/summary_placeholder"
         settings:allowDividerAbove="true"/>
+
+    <!-- /// M: Device Baseband version2 -->
+    <Preference
+        android:key="baseband_version_2"
+        android:order="50"
+        android:title="@string/baseband_version"
+        android:summary="@string/device_info_default"/>
+
+    <!-- /// M: Custom build version -->
+    <Preference
+        android:key="custom_build_version"
+        android:order="51"
+        android:title="@string/custom_build_version"/>
+
+    <!-- /// M: MTK_SYSTEM_UPDATE -->
+    <Preference android:key="mtk_system_update"
+        android:order="52"/>
 
 </PreferenceScreen>

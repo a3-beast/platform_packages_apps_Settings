@@ -108,6 +108,17 @@ public class EncryptionInterstitial extends SettingsActivity {
         public void onViewCreated(View view, Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
 
+            /* M: fragment lifecycle should be same as Activity lifecycle */
+            Log.d(TAG, "EncryptionInterstitialFragment onViewCreated,  isActivityFinishing: "
+                  + (getActivity().isFinishing()) + "isActivity Destroyed: "
+                  + (getActivity().isDestroyed()) + "Monkey user :" + Utils.isMonkeyRunning());
+
+            if(getActivity().isFinishing() || getActivity().isDestroyed())
+            {
+                Log.d(TAG, "SettingsActivity is finishing or destroyed, returning");
+                return;
+            }
+
             mRequirePasswordToDecrypt = view.findViewById(R.id.encrypt_require_password);
             mDontRequirePasswordToDecrypt = view.findViewById(R.id.encrypt_dont_require_password);
             boolean forFingerprint = getActivity().getIntent().getBooleanExtra(

@@ -24,13 +24,21 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
 import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
 
+/// M: Add for supporting SIM hot swap. @{
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+/// @}
+
 public class SimStatusDialogFragment extends InstrumentedDialogFragment {
+
+    private static final String LOG_TAG = "SimStatusDialogFragment";
 
     private static final String SIM_SLOT_BUNDLE_KEY = "arg_key_sim_slot";
     private static final String DIALOG_TITLE_BUNDLE_KEY = "arg_key_dialog_title";
@@ -39,6 +47,9 @@ public class SimStatusDialogFragment extends InstrumentedDialogFragment {
 
     private View mRootView;
     private SimStatusDialogController mController;
+
+    /// M: Add for supporting SIM hot swap.
+    private SimHotSwapHandler mSimHotSwapHandler = null;
 
     @Override
     public int getMetricsCategory() {
@@ -89,4 +100,51 @@ public class SimStatusDialogFragment extends InstrumentedDialogFragment {
             textView.setText(text);
         }
     }
+
+    /// M: Add for updating CDMA SIM status. @{
+    public boolean isSettingOnScreen(int viewId) {
+        final View view = mRootView.findViewById(viewId);
+        if (view != null) {
+            return (view.getVisibility() == View.VISIBLE);
+        }
+        return false;
+    }
+
+    public void addSettingToScreen(int viewId) {
+        final View view = mRootView.findViewById(viewId);
+        if (view != null) {
+            view.setVisibility(View.VISIBLE);
+        }
+    }
+    /// @}
+
+    /// M: Add for supporting SIM hot swap. @{
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if (mSimHotSwapHandler == null) {
+            mSimHotSwapHandler = new SimHotSwapHandler(getContext());
+        }
+
+        if (mSimHotSwapHandler != null) {
+            mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+                @Override
+                public void onSimHotSwap() {
+                    Log.d(LOG_TAG, "onSimHotSwap, dismiss dialog.");
+                    dismissAllowingStateLoss();
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mSimHotSwapHandler != null) {
+            mSimHotSwapHandler.unregisterOnSimHotSwap();
+        }
+
+        super.onDestroy();
+    }
+    /// @}
 }

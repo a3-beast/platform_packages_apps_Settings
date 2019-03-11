@@ -40,7 +40,7 @@ public class DataSaverBackend {
 
     private final NetworkPolicyManager mPolicyManager;
     private final ArrayList<Listener> mListeners = new ArrayList<>();
-    private SparseIntArray mUidPolicies = new SparseIntArray();
+    private static SparseIntArray mUidPolicies = new SparseIntArray();
     private boolean mWhitelistInitialized;
     private boolean mBlacklistInitialized;
 

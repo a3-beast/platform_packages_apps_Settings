@@ -38,6 +38,7 @@ import com.android.settings.dashboard.conditional.ConditionManager;
 import com.android.settings.dashboard.conditional.ConditionManager.ConditionListener;
 import com.android.settings.dashboard.conditional.FocusRecyclerView;
 import com.android.settings.dashboard.conditional.FocusRecyclerView.FocusListener;
+import com.android.settings.dashboard.conditional.FocusRecyclerView.DetachListener;
 import com.android.settings.dashboard.suggestions.SuggestionFeatureProvider;
 import com.android.settings.overlay.FeatureFactory;
 import com.android.settings.widget.ActionBarShadowController;
@@ -52,7 +53,7 @@ import java.util.List;
 
 public class DashboardSummary extends InstrumentedFragment
         implements CategoryListener, ConditionListener,
-        FocusListener, SuggestionControllerMixin.SuggestionControllerHost {
+        FocusListener, SuggestionControllerMixin.SuggestionControllerHost, DetachListener {
     public static final boolean DEBUG = false;
     private static final boolean DEBUG_TIMING = false;
     private static final int MAX_WAIT_MILLIS = 3000;
@@ -182,6 +183,14 @@ public class DashboardSummary extends InstrumentedFragment
         }
     }
 
+    /// M: ALPS03866729 Remove conditionListener when detach. @{
+    @Override
+    public void onDetachedFromWindow() {
+        Log.d(TAG, "Detached from window, stop listening for condition changes");
+        mConditionManager.remListener(this);
+    }
+    /// @}
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -206,6 +215,7 @@ public class DashboardSummary extends InstrumentedFragment
         mDashboard.setLayoutManager(mLayoutManager);
         mDashboard.setHasFixedSize(true);
         mDashboard.setListener(this);
+        mDashboard.setDetachListener(this);
         mDashboard.setItemAnimator(new DashboardItemAnimator());
         mAdapter = new DashboardAdapter(getContext(), bundle,
                 mConditionManager.getConditions(), mSuggestionControllerMixin, getLifecycle());

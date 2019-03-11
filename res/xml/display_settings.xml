@@ -22,6 +22,14 @@
     settings:keywords="@string/keywords_display"
     settings:initialExpandedChildrenCount="4">
 
+    <!--M: Add MiraVision Settings entrance -->
+    <Preference
+        android:key="mira_vision"
+        android:title="@string/mira_vision_title"
+        android:summary="@string/mira_vision_summary">
+        <intent android:action="com.android.settings.MIRA_VISION" />
+    </Preference>
+
     <com.android.settingslib.RestrictedPreference
         android:key="brightness"
         android:title="@string/brightness"
@@ -84,6 +92,13 @@
         settings:controller="com.android.settings.display.FontSizePreferenceController"
         settings:keywords="@string/keywords_display_font_size" />
 
+    <Preference
+        android:key="custom_font_size"
+        android:title="@string/title_font_size"
+        android:fragment="com.mediatek.settings.accessibility.CustomToggleFontSizePreferenceFragment"
+        settings:controller="com.mediatek.settings.display.CustomFontSizePreferenceController"
+        settings:keywords="@string/keywords_custom_display_font_size" />
+
     <com.android.settings.display.ScreenZoomPreference
         android:key="display_settings_screen_zoom"
         android:title="@string/screen_zoom_title"
@@ -105,6 +120,12 @@
         android:title="@string/ambient_display_screen_title"
         android:fragment="com.android.settings.display.AmbientDisplaySettings"
         settings:userRestriction="no_ambient_display" />
+
+    <!--M: Add Always on display switch -->
+    <SwitchPreference
+        android:key="always_on_display"
+        android:title="@string/aod_title"
+        android:summary="@string/aod_summary" />
 
     <!-- Hide night mode for now
     <ListPreference
@@ -145,5 +166,15 @@
         android:key="vr_display_pref"
         android:title="@string/display_vr_pref_title"
         android:fragment="com.android.settings.display.VrDisplayPreferencePicker" />
+
+
+
+    <!-- M: add for HDMI settings begin -->
+    <Preference
+        android:fragment="com.mediatek.hdmi.HdmiSettings"
+        android:key="hdmi_settings"
+        android:summary="@string/hdmi_settings_summary"
+        android:title="@string/hdmi_settings" />
+    <!-- M: MTK add for HDMI settings end -->
 
 </PreferenceScreen>

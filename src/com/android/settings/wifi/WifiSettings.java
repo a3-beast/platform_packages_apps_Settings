@@ -49,6 +49,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.LinkifyUtils;
@@ -61,6 +63,7 @@ import com.android.settings.location.ScanningSettings;
 import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.search.Indexable;
 import com.android.settings.search.SearchIndexableRaw;
+import com.android.settings.Utils;
 import com.android.settings.widget.SummaryUpdater.OnSummaryChangeListener;
 import com.android.settings.widget.SwitchBarController;
 import com.android.settings.wifi.details.WifiNetworkDetailsFragment;
@@ -70,7 +73,10 @@ import com.android.settingslib.wifi.AccessPoint.AccessPointListener;
 import com.android.settingslib.wifi.AccessPointPreference;
 import com.android.settingslib.wifi.WifiTracker;
 import com.android.settingslib.wifi.WifiTrackerFactory;
-
+import android.support.v7.preference.PreferenceManager;
+import com.mediatek.settings.ext.IWifiSettingsExt;
+import com.mediatek.nfcsettingsadapter.NfcSettingsAdapter;
+import com.mediatek.settings.UtilsExt;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -171,7 +177,7 @@ public class WifiSettings extends RestrictedSettingsFragment
     private Preference mConfigureWifiSettingsPreference;
     private Preference mSavedNetworksPreference;
     private LinkablePreference mStatusMessagePreference;
-
+    private IWifiSettingsExt mWifiSettingsExt;
     // For Search
     public static final String DATA_KEY_REFERENCE = "main_toggle_wifi";
 
@@ -195,16 +201,23 @@ public class WifiSettings extends RestrictedSettingsFragment
             mProgressHeader = setPinnedHeaderView(R.layout.wifi_progress_header)
                     .findViewById(R.id.progress_bar_animation);
             setProgressBarVisible(false);
-        }
-        ((SettingsActivity) activity).getSwitchBar().setSwitchBarText(
+
+            if(activity == null
+               || ((SettingsActivity) activity).getSwitchBar() == null)
+            {
+                Log.w(TAG, "SettingsActivity or switchbar doesn't exist, returning");
+                return;
+            }
+            ((SettingsActivity) activity).getSwitchBar().setSwitchBarText(
                 R.string.wifi_settings_master_switch_title,
                 R.string.wifi_settings_master_switch_title);
+        }
     }
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        mWifiSettingsExt = UtilsExt.getWifiSettingsExt(getPrefContext());
         // TODO(b/37429702): Add animations and preference comparator back after initial screen is
         // loaded (ODR).
         setAnimationAllowed(false);
@@ -233,6 +246,7 @@ public class WifiSettings extends RestrictedSettingsFragment
         mStatusMessagePreference = new LinkablePreference(prefContext);
 
         mUserBadgeCache = new AccessPointPreference.UserBadgeCache(getPackageManager());
+        mWifiSettingsExt.init(getPreferenceScreen());
     }
 
     @Override
@@ -248,50 +262,53 @@ public class WifiSettings extends RestrictedSettingsFragment
             mConnectivityManager = getActivity().getSystemService(ConnectivityManager.class);
         }
 
-        mConnectListener = new WifiManager.ActionListener() {
-                                   @Override
-                                   public void onSuccess() {
-                                   }
-                                   @Override
-                                   public void onFailure(int reason) {
-                                       Activity activity = getActivity();
-                                       if (activity != null) {
-                                           Toast.makeText(activity,
-                                                R.string.wifi_failed_connect_message,
-                                                Toast.LENGTH_SHORT).show();
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager != null) {
+            mConnectListener = new WifiManager.ActionListener() {
+                                       @Override
+                                       public void onSuccess() {
                                        }
-                                   }
-                               };
+                                       @Override
+                                       public void onFailure(int reason) {
+                                           Activity activity = getActivity();
+                                           if (activity != null) {
+                                               Toast.makeText(activity,
+                                                    R.string.wifi_failed_connect_message,
+                                                    Toast.LENGTH_SHORT).show();
+                                           }
+                                       }
+                                   };
 
-        mSaveListener = new WifiManager.ActionListener() {
-                                @Override
-                                public void onSuccess() {
-                                }
-                                @Override
-                                public void onFailure(int reason) {
-                                    Activity activity = getActivity();
-                                    if (activity != null) {
-                                        Toast.makeText(activity,
-                                            R.string.wifi_failed_save_message,
-                                            Toast.LENGTH_SHORT).show();
+            mSaveListener = new WifiManager.ActionListener() {
+                                    @Override
+                                    public void onSuccess() {
                                     }
-                                }
-                            };
+                                    @Override
+                                    public void onFailure(int reason) {
+                                        Activity activity = getActivity();
+                                        if (activity != null) {
+                                            Toast.makeText(activity,
+                                                R.string.wifi_failed_save_message,
+                                                Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                };
 
-        mForgetListener = new WifiManager.ActionListener() {
-                                   @Override
-                                   public void onSuccess() {
-                                   }
-                                   @Override
-                                   public void onFailure(int reason) {
-                                       Activity activity = getActivity();
-                                       if (activity != null) {
-                                           Toast.makeText(activity,
-                                               R.string.wifi_failed_forget_message,
-                                               Toast.LENGTH_SHORT).show();
+            mForgetListener = new WifiManager.ActionListener() {
+                                       @Override
+                                       public void onSuccess() {
                                        }
-                                   }
-                               };
+                                       @Override
+                                       public void onFailure(int reason) {
+                                           Activity activity = getActivity();
+                                           if (activity != null) {
+                                               Toast.makeText(activity,
+                                                   R.string.wifi_failed_forget_message,
+                                                   Toast.LENGTH_SHORT).show();
+                                           }
+                                       }
+                                   };
+        }
 
         if (savedInstanceState != null) {
             mDialogMode = savedInstanceState.getInt(SAVE_DIALOG_MODE);
@@ -351,8 +368,10 @@ public class WifiSettings extends RestrictedSettingsFragment
             restrictUi();
             return;
         }
-
-        onWifiStateChanged(mWifiManager.getWifiState());
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager != null) {
+            onWifiStateChanged(mWifiManager.getWifiState());
+        }
     }
 
     private void restrictUi() {
@@ -387,6 +406,7 @@ public class WifiSettings extends RestrictedSettingsFragment
         if (mWifiEnabler != null) {
             mWifiEnabler.resume(activity);
         }
+
     }
 
     @Override
@@ -468,6 +488,9 @@ public class WifiSettings extends RestrictedSettingsFragment
                     // be used again, ephemerally).
                     menu.add(Menu.NONE, MENU_ID_FORGET, 0, R.string.wifi_menu_forget);
                 }
+                // current connected AP, add a disconnect option to it
+                mWifiSettingsExt.updateContextMenu(menu,
+                        Menu.FIRST + 100, mSelectedAccessPoint.getDetailedState());
                 if (mSelectedAccessPoint.isSaved()) {
                     menu.add(Menu.NONE, MENU_ID_MODIFY, 0, R.string.wifi_menu_modify);
                     NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(getActivity());
@@ -512,6 +535,10 @@ public class WifiSettings extends RestrictedSettingsFragment
                 return true;
 
         }
+        ///M: add mtk feature
+        if (mWifiSettingsExt != null && mSelectedAccessPoint != null) {
+            return mWifiSettingsExt.disconnect(item, mSelectedAccessPoint.getConfig());
+        }
         return super.onContextItemSelected(item);
     }
 
@@ -522,7 +549,11 @@ public class WifiSettings extends RestrictedSettingsFragment
             preference.setOnPreferenceClickListener(null);
             return super.onPreferenceTreeClick(preference);
         }
-
+        /// M: For CMCC feature: add fresh button click @{
+        if (mWifiSettingsExt.customRefreshButtonClick(preference)) {
+            return true;
+        }
+        /// @}
         if (preference instanceof LongPressAccessPointPreference) {
             mSelectedAccessPoint = ((LongPressAccessPointPreference) preference).getAccessPoint();
             if (mSelectedAccessPoint == null) {
@@ -596,6 +627,9 @@ public class WifiSettings extends RestrictedSettingsFragment
                         // Reset the saved access point data
                         mAccessPointSavedState = null;
                     }
+                    /// M: add mtk feature @{
+                    if (mSelectedAccessPoint != null) {
+                    }
                     mDialog = WifiDialog
                             .createModal(getActivity(), this, mDlgAccessPoint, mDialogMode);
                 }
@@ -645,7 +679,9 @@ public class WifiSettings extends RestrictedSettingsFragment
      */
     private void updateAccessPointsDelayed() {
         // Safeguard from some delayed event handling
-        if (getActivity() != null && !mIsRestricted && mWifiManager.isWifiEnabled()) {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (getActivity() != null && !mIsRestricted
+         && mWifiManager != null && mWifiManager.isWifiEnabled()) {
             final View view = getView();
             final Handler handler = view.getHandler();
             if (handler != null && handler.hasCallbacks(mUpdateAccessPointsRunnable)) {
@@ -659,7 +695,8 @@ public class WifiSettings extends RestrictedSettingsFragment
     /** Called when the state of Wifi has changed. */
     @Override
     public void onWifiStateChanged(int state) {
-        if (mIsRestricted) {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mIsRestricted || mWifiManager == null) {
             return;
         }
 
@@ -673,16 +710,19 @@ public class WifiSettings extends RestrictedSettingsFragment
                 removeConnectedAccessPointPreference();
                 mAccessPointsPreferenceCategory.removeAll();
                 addMessagePreference(R.string.wifi_starting);
+                mWifiSettingsExt.emptyCategory(getPreferenceScreen());
                 setProgressBarVisible(true);
                 break;
 
             case WifiManager.WIFI_STATE_DISABLING:
                 removeConnectedAccessPointPreference();
                 mAccessPointsPreferenceCategory.removeAll();
+                mWifiSettingsExt.emptyCategory(getPreferenceScreen());
                 addMessagePreference(R.string.wifi_stopping);
                 break;
 
             case WifiManager.WIFI_STATE_DISABLED:
+                mWifiSettingsExt.emptyCategory(getPreferenceScreen());
                 setOffMessage();
                 setAdditionalSettingsSummaries();
                 setProgressBarVisible(false);
@@ -695,6 +735,10 @@ public class WifiSettings extends RestrictedSettingsFragment
      */
     @Override
     public void onConnectedChanged() {
+        /// M: update priority after connnect AP @{
+        if (mWifiTracker.isConnected()) {
+        }
+        /// @}
         changeNextButtonState(mWifiTracker.isConnected());
     }
 
@@ -715,9 +759,11 @@ public class WifiSettings extends RestrictedSettingsFragment
 
     private void updateAccessPointPreferences() {
         // in case state has changed
-        if (!mWifiManager.isWifiEnabled()) {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null || !mWifiManager.isWifiEnabled()) {
             return;
         }
+        mWifiSettingsExt.emptyCategory(getPreferenceScreen());
         // AccessPoints are sorted by the WifiTracker
         final List<AccessPoint> accessPoints = mWifiTracker.getAccessPoints();
         if (isVerboseLoggingEnabled()) {
@@ -754,14 +800,23 @@ public class WifiSettings extends RestrictedSettingsFragment
                         mOpenSsid = null;
                     }
                 }
-                mAccessPointsPreferenceCategory.addPreference(preference);
+                /// M: modify for cmcc feature @{
+                // mAccessPointsPreferenceCategory.addPreference(preference);
+                mWifiSettingsExt.addPreference(getPreferenceScreen(),
+                        mAccessPointsPreferenceCategory, preference,
+                        accessPoint.getConfig() != null);
+                /// @}
                 accessPoint.setListener(WifiSettings.this);
                 preference.refresh();
             }
         }
         removeCachedPrefs(mAccessPointsPreferenceCategory);
         mAddPreference.setOrder(index);
-        mAccessPointsPreferenceCategory.addPreference(mAddPreference);
+        /// M: modify for cmcc feature @{
+        // mAccessPointsPreferenceCategory.addPreference(mAddPreference);
+        mWifiSettingsExt.addPreference(getPreferenceScreen(),
+                mAccessPointsPreferenceCategory, mAddPreference, false);
+        /// @}
         setAdditionalSettingsSummaries();
 
         if (!hasAvailableAccessPoints) {
@@ -771,7 +826,11 @@ public class WifiSettings extends RestrictedSettingsFragment
             pref.setSummary(R.string.wifi_empty_list_wifi_on);
             pref.setOrder(index++);
             pref.setKey(PREF_KEY_EMPTY_WIFI_LIST);
-            mAccessPointsPreferenceCategory.addPreference(pref);
+            /// M: modify for cmcc feature @{
+            // mAccessPointsPreferenceCategory.addPreference(pref);
+            mWifiSettingsExt.addPreference(getPreferenceScreen(),
+                    mAccessPointsPreferenceCategory, pref, false);
+            /// @}
         } else {
             // Continuing showing progress bar for an additional delay to overlap with animation
             getView().postDelayed(mHideProgressBarRunnable, 1700 /* delay millis */);
@@ -798,6 +857,11 @@ public class WifiSettings extends RestrictedSettingsFragment
      */
     private boolean configureConnectedAccessPointPreferenceCategory(
             List<AccessPoint> accessPoints) {
+        /// M: in cmcc project, can not create connectedAccessPointPreference() {@
+        if (mWifiSettingsExt.removeConnectedAccessPointPreference()) {
+            return false;
+        }
+        /// @}
         if (accessPoints.size() == 0) {
             removeConnectedAccessPointPreference();
             return false;
@@ -931,6 +995,10 @@ public class WifiSettings extends RestrictedSettingsFragment
     }
 
     private void setAdditionalSettingsSummaries() {
+        /// M: For CMCC feature: add fresh button @{
+        mWifiSettingsExt.addRefreshPreference(getPreferenceScreen(),
+                mWifiTracker, mIsRestricted);
+        /// @}
         mAdditionalSettingsPreferenceCategory.addPreference(mConfigureWifiSettingsPreference);
         mConfigureWifiSettingsPreference.setSummary(getString(
                 isWifiWakeupEnabled()
@@ -977,14 +1045,26 @@ public class WifiSettings extends RestrictedSettingsFragment
         mStatusMessagePreference.setText(title, description, clickListener);
         removeConnectedAccessPointPreference();
         mAccessPointsPreferenceCategory.removeAll();
-        mAccessPointsPreferenceCategory.addPreference(mStatusMessagePreference);
+        /// M: modify for cmcc feature @{
+        // mAccessPointsPreferenceCategory.addPreference(mStatusMessagePreference);
+        mWifiSettingsExt.addPreference(getPreferenceScreen(),
+                mAccessPointsPreferenceCategory,
+                mStatusMessagePreference,
+                false);
+        /// }@
     }
 
     private void addMessagePreference(int messageId) {
         mStatusMessagePreference.setTitle(messageId);
         removeConnectedAccessPointPreference();
         mAccessPointsPreferenceCategory.removeAll();
-        mAccessPointsPreferenceCategory.addPreference(mStatusMessagePreference);
+        /// M: modify for cmcc feature @{
+        // mAccessPointsPreferenceCategory.addPreference(mStatusMessagePreference);
+        mWifiSettingsExt.addPreference(getPreferenceScreen(),
+                mAccessPointsPreferenceCategory,
+                mStatusMessagePreference,
+                false);
+        /// }@
     }
 
     protected void setProgressBarVisible(boolean visible) {
@@ -1019,8 +1099,12 @@ public class WifiSettings extends RestrictedSettingsFragment
 
     /* package */ void submit(WifiConfigController configController) {
 
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null) {
+            return;
+        }
         final WifiConfiguration config = configController.getConfig();
-
+        Log.d(TAG, "submit, config = " + config);
         if (config == null) {
             if (mSelectedAccessPoint != null
                     && mSelectedAccessPoint.isSaved()) {
@@ -1039,6 +1123,11 @@ public class WifiSettings extends RestrictedSettingsFragment
     }
 
     /* package */ void forget() {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null) {
+            return;
+        }
+
         mMetricsFeatureProvider.action(getActivity(), MetricsEvent.ACTION_WIFI_FORGET);
         if (!mSelectedAccessPoint.isSaved()) {
             if (mSelectedAccessPoint.getNetworkInfo() != null &&
@@ -1064,6 +1153,11 @@ public class WifiSettings extends RestrictedSettingsFragment
     }
 
     protected void connect(final WifiConfiguration config, boolean isSavedNetwork) {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null) {
+            return;
+        }
+
         // Log subtype if configuration is a saved network.
         mMetricsFeatureProvider.action(getVisibilityLogger(), MetricsEvent.ACTION_WIFI_CONNECT,
                 isSavedNetwork);
@@ -1072,6 +1166,10 @@ public class WifiSettings extends RestrictedSettingsFragment
     }
 
     protected void connect(final int networkId, boolean isSavedNetwork) {
+        /// M: [ALPS04163925] Wifi Manager could be null when device encrypted
+        if (mWifiManager == null) {
+            return;
+        }
         // Log subtype if configuration is a saved network.
         mMetricsFeatureProvider.action(getActivity(), MetricsEvent.ACTION_WIFI_CONNECT,
                 isSavedNetwork);
@@ -1172,3 +1270,4 @@ public class WifiSettings extends RestrictedSettingsFragment
         }
     };
 }
+

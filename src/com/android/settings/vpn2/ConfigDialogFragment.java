@@ -125,7 +125,14 @@ public class ConfigDialogFragment extends InstrumentedDialogFragment implements
      */
     @Override
     public void onShow(DialogInterface dialogInterface) {
-        ((AlertDialog) getDialog()).getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(this);
+        /// M: ALPS03912877 fix null pointer exception @ {
+        AlertDialog dialog = (AlertDialog) getDialog();
+        if (dialog == null) {
+            dismiss();
+            return;
+        }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(this);
+        /// @}
     }
 
     @Override

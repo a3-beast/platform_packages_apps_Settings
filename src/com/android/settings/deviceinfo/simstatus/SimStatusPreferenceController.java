@@ -18,22 +18,34 @@ package com.android.settings.deviceinfo.simstatus;
 
 import android.app.Fragment;
 import android.content.Context;
+/// M: Add for updating carrier name.
+import android.os.Bundle;
 import android.support.annotation.VisibleForTesting;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import com.android.settings.R;
 import com.android.settings.core.PreferenceControllerMixin;
+/// M: Add for updating carrier name. @{
+import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.android.settingslib.core.lifecycle.LifecycleObserver;
+import com.android.settingslib.core.lifecycle.events.OnCreate;
+import com.android.settingslib.core.lifecycle.events.OnDestroy;
+/// @}
 import com.android.settingslib.deviceinfo.AbstractSimStatusImeiInfoPreferenceController;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimStatusPreferenceController extends
-        AbstractSimStatusImeiInfoPreferenceController implements PreferenceControllerMixin {
+/// M: Revise for updating carrier name.
+public class SimStatusPreferenceController extends AbstractSimStatusImeiInfoPreferenceController
+        implements PreferenceControllerMixin, LifecycleObserver, OnCreate, OnDestroy {
+
+    private static final String TAG = "SimStatusPreferenceController";
 
     private static final String KEY_SIM_STATUS = "sim_status";
 
@@ -42,14 +54,21 @@ public class SimStatusPreferenceController extends
     private final Fragment mFragment;
     private final List<Preference> mPreferenceList = new ArrayList<>();
 
-    public SimStatusPreferenceController(Context context, Fragment fragment) {
+    /// M: Revise for updating carrier name. @{
+    public SimStatusPreferenceController(Context context, Fragment fragment, Lifecycle lifecycle) {
         super(context);
 
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         mSubscriptionManager = (SubscriptionManager) context.getSystemService(
                 Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         mFragment = fragment;
+
+        // Add this controller into lifecycle.
+        if (lifecycle != null) {
+            lifecycle.addObserver(this);
+        }
     }
+    /// @}
 
     @Override
     public String getPreferenceKey() {
@@ -121,4 +140,27 @@ public class SimStatusPreferenceController extends
     Preference createNewPreference(Context context) {
         return new Preference(context);
     }
+
+    /// M: Register listener for updating carrier name. @{
+    private final SubscriptionManager.OnSubscriptionsChangedListener mOnSubscriptionsChangeListener
+            = new SubscriptionManager.OnSubscriptionsChangedListener() {
+        @Override
+        public void onSubscriptionsChanged() {
+            Log.d(TAG, "onSubscriptionsChanged");
+            updateState(null);
+        }
+    };
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        // Register listener for updating carrier name.
+        mSubscriptionManager.addOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+    }
+
+    @Override
+    public void onDestroy() {
+        // Unregister listener.
+        mSubscriptionManager.removeOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+    }
+    /// @}
 }

@@ -121,6 +121,12 @@
     <item msgid="3079489731769553856">"TTLS"</item>
     <item msgid="35269224158638258">"PWD"</item>
   </string-array>
+    <!-- no translation found for wifi_ap_band_config_full:0 (1085243288162893079) -->
+    <!-- no translation found for wifi_ap_band_config_full:1 (5531376834915607202) -->
+    <!-- no translation found for wifi_ap_band_summary_full:0 (7176872102094020362) -->
+    <!-- no translation found for wifi_ap_band_summary_full:1 (311895158827229479) -->
+    <!-- no translation found for wifi_ap_band_config_2G_only:0 (7006771583217001015) -->
+    <!-- no translation found for wifi_ap_band_config_2G_only:1 (8904289885593822837) -->
   <string-array name="wifi_p2p_wps_setup">
     <item msgid="5085064298144493867">"Düğme"</item>
     <item msgid="1624323946324499595">"Eş cihazın PIN\'i"</item>
@@ -285,7 +291,7 @@
     <item msgid="6325739889222559394">"medya sesi düzeyi"</item>
     <item msgid="5762123934816216821">"alarm sesi düzeyi"</item>
     <item msgid="785049718065337473">"bildirim sesi düzeyi"</item>
-    <item msgid="6700305533746877052">"Bluetooth ses düzeyi"</item>
+    <item msgid="6700305533746877052">"Bluetooth sesi düzeyi"</item>
     <item msgid="2029227495214047094">"uyanık tut"</item>
     <item msgid="26109888160231211">"konumu izle"</item>
     <item msgid="5753382310468855812">"yüksek güç tüketen konum hizmetlerini izle"</item>
@@ -347,11 +353,11 @@
     <item msgid="5753789168376302997">"Medya düğmeleri"</item>
     <item msgid="3265262911688671938">"Ses odağı"</item>
     <item msgid="2098976479485046797">"Ana ses düzeyi"</item>
-    <item msgid="5660213838861789350">"Konuşma ses düzeyi"</item>
-    <item msgid="7983336752371254444">"Zil ses düzeyi"</item>
-    <item msgid="7878027809189330917">"Medya ses düzeyi"</item>
-    <item msgid="7260546305036218513">"Alarm ses düzeyi"</item>
-    <item msgid="9103719301075748925">"Bildirim ses düzeyi"</item>
+    <item msgid="5660213838861789350">"Konuşma sesi düzeyi"</item>
+    <item msgid="7983336752371254444">"Zil sesi düzeyi"</item>
+    <item msgid="7878027809189330917">"Medya sesi düzeyi"</item>
+    <item msgid="7260546305036218513">"Alarm sesi düzeyi"</item>
+    <item msgid="9103719301075748925">"Bildirim sesi düzeyi"</item>
     <item msgid="7025966722295861512">"Bluetooth ses düzeyi"</item>
     <item msgid="4665183401128289653">"Uyanık tut"</item>
     <item msgid="8584357129746649222">"Konum"</item>

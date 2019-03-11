@@ -33,7 +33,6 @@ import com.android.settings.wrapper.OverlayManagerWrapper;
 import com.android.settings.wrapper.OverlayManagerWrapper.OverlayInfo;
 import com.android.settingslib.development.DeveloperOptionsPreferenceController;
 
-import java.util.Comparator;
 import java.util.List;
 
 public class EmulateDisplayCutoutPreferenceController extends
@@ -41,8 +40,6 @@ public class EmulateDisplayCutoutPreferenceController extends
         PreferenceControllerMixin {
 
     private static final String KEY = "display_cutout_emulation";
-    private static final Comparator<OverlayInfo> OVERLAY_INFO_COMPARATOR =
-            Comparator.comparingInt(a -> a.priority);
 
     private final OverlayManagerWrapper mOverlayManager;
     private final boolean mAvailable;
@@ -123,7 +120,7 @@ public class EmulateDisplayCutoutPreferenceController extends
 
         int current = 0;
         pkgs[0] = "";
-        labels[0] = mContext.getString(R.string.display_cutout_emulation_device_default);
+        labels[0] = mContext.getString(R.string.display_cutout_emulation_none);
 
         for (int i = 0; i < overlays.length; i++) {
             OverlayInfo o = overlays[i];
@@ -156,7 +153,6 @@ public class EmulateDisplayCutoutPreferenceController extends
                 overlayInfos.remove(i);
             }
         }
-        overlayInfos.sort(OVERLAY_INFO_COMPARATOR);
         return overlayInfos.toArray(new OverlayInfo[overlayInfos.size()]);
     }
 

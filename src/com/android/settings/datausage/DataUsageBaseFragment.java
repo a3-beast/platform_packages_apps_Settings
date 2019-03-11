@@ -38,6 +38,9 @@ import com.android.settings.SettingsPreferenceFragment;
 import com.android.settings.dashboard.DashboardFragment;
 import com.android.settingslib.NetworkPolicyEditor;
 
+import com.mediatek.settings.sim.SimHotSwapHandler;
+import com.mediatek.settings.sim.SimHotSwapHandler.OnSimHotSwapListener;
+
 public abstract class DataUsageBaseFragment extends DashboardFragment {
     private static final String TAG = "DataUsageBase";
     private static final String ETHERNET = "ethernet";
@@ -62,6 +65,20 @@ public abstract class DataUsageBaseFragment extends DashboardFragment {
         services.mTelephonyManager = TelephonyManager.from(context);
         services.mSubscriptionManager = SubscriptionManager.from(context);
         services.mUserManager = UserManager.get(context);
+
+        /// M: for [SIM Hot Swap] @{
+        mSimHotSwapHandler = new SimHotSwapHandler(getActivity().getApplicationContext());
+        mSimHotSwapHandler.registerOnSimHotSwap(new OnSimHotSwapListener() {
+            @Override
+            public void onSimHotSwap() {
+                if (getActivity() != null) {
+                    Log.d(TAG, "onSimHotSwap, finish Activity~~");
+                    getActivity().finish();
+                }
+            }
+        });
+        /// @}
+
     }
 
     @Override
@@ -128,5 +145,17 @@ public abstract class DataUsageBaseFragment extends DashboardFragment {
 
         // only show ethernet when both hardware present and traffic has occurred
         return hasEthernet && ethernetBytes > 0;
+    }
+
+    ///------------------------------------MTK------------------------------------------------
+
+    /// M: for [SIM Hot Swap]
+    private SimHotSwapHandler mSimHotSwapHandler;
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        /// M: for [Sim Hot Swap]
+        mSimHotSwapHandler.unregisterOnSimHotSwap();
     }
 }

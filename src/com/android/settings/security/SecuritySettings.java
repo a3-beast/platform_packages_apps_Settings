@@ -42,6 +42,13 @@ import com.android.settings.widget.PreferenceCategoryController;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
 
+import com.mediatek.faceid.FaceIdPreferenceController;
+import com.mediatek.faceid.FaceIdSettings;
+import com.mediatek.settings.security.DataprotectionPreferenceController;
+import com.mediatek.settings.security.PplPreferenceController;
+import com.mediatek.settings.security.AutoBootManagementPreferenceController;
+import com.mediatek.settings.security.PermissionControlPreferenceController;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +62,8 @@ public class SecuritySettings extends DashboardFragment {
     public static final int UNIFY_LOCK_CONFIRM_DEVICE_REQUEST = 128;
     public static final int UNIFY_LOCK_CONFIRM_PROFILE_REQUEST = 129;
     public static final int UNUNIFY_LOCK_CONFIRM_DEVICE_REQUEST = 130;
-
+    public static final int FACEID_REQUEST = 150;
+    private static final String KEY_FACEID = "faceid";
     @Override
     public int getMetricsCategory() {
         return MetricsProto.MetricsEvent.SECURITY;
@@ -123,8 +131,14 @@ public class SecuritySettings extends DashboardFragment {
         controllers.add(new EncryptionStatusPreferenceController(context,
                 PREF_KEY_ENCRYPTION_SECURITY_PAGE));
         controllers.add(new TrustAgentListPreferenceController(context, host, lifecycle));
-
+        /// M: add CTA feature ,protection lock,dataprotection,permissioncontrol @{
+        controllers.add(new DataprotectionPreferenceController(context));
+        controllers.add(new PplPreferenceController(context, lifecycle));
+        controllers.add(new PermissionControlPreferenceController(context));
+        controllers.add(new AutoBootManagementPreferenceController(context));
+        // @}
         final List<AbstractPreferenceController> securityPreferenceControllers = new ArrayList<>();
+        securityPreferenceControllers.add(new FaceIdPreferenceController(context, host));
         securityPreferenceControllers.add(new FingerprintStatusPreferenceController(context));
         securityPreferenceControllers.add(new LockScreenPreferenceController(context, lifecycle));
         securityPreferenceControllers.add(new ChangeScreenLockPreferenceController(context, host));

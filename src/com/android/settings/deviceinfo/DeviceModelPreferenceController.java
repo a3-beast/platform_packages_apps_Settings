@@ -18,6 +18,7 @@ package com.android.settings.deviceinfo;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Build;
+import android.os.SystemProperties;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
 import android.text.TextUtils;
@@ -26,17 +27,21 @@ import com.android.settings.R;
 import com.android.settings.core.PreferenceControllerMixin;
 import com.android.settingslib.DeviceInfoUtils;
 import com.android.settingslib.core.AbstractPreferenceController;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IDeviceInfoSettingsExt;
 
 public class DeviceModelPreferenceController extends AbstractPreferenceController implements
         PreferenceControllerMixin {
 
     private static final String KEY_DEVICE_MODEL = "device_model";
-
+    private static final String KEY_RSC = "ro.boot.rsc";
     private final Fragment mHost;
+    private static IDeviceInfoSettingsExt mExt;
 
     public DeviceModelPreferenceController(Context context, Fragment host) {
         super(context);
         mHost = host;
+        mExt = UtilsExt.getDeviceInfoSettingsExt(context);
     }
 
     @Override
@@ -51,6 +56,9 @@ public class DeviceModelPreferenceController extends AbstractPreferenceControlle
         if (pref != null) {
             pref.setSummary(mContext.getResources().getString(R.string.model_summary,
                     getDeviceModel()));
+            mExt.updateSummary(pref, Build.MODEL,
+                    mContext.getResources().getString(R.string.model_summary,
+                            getDeviceModel()));
         }
     }
 
@@ -70,6 +78,8 @@ public class DeviceModelPreferenceController extends AbstractPreferenceControlle
     }
 
     public static String getDeviceModel() {
-        return Build.MODEL + DeviceInfoUtils.getMsvSuffix();
+        String deviceName = SystemProperties.get(KEY_RSC);
+        deviceName = !TextUtils.isEmpty(deviceName) ? deviceName : Build.MODEL + DeviceInfoUtils.getMsvSuffix();
+        return UtilsExt.useDeviceInfoSettingsExt().customeModelInfo(deviceName);
     }
 }

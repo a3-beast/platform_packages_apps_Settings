@@ -25,6 +25,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.util.Log;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
@@ -49,8 +50,19 @@ public class HotspotCondition extends Condition {
 
     @Override
     public void refreshState() {
-        boolean wifiTetherEnabled = mWifiManager.isWifiApEnabled();
-        setActive(wifiTetherEnabled);
+        /* M: @{ due to new AOSP design of Android-P , wifiManager service will be
+         * unavailable in case of device ecryption. its a google issue
+         * already reported to Google bug id: 109588864
+         * Solution : null check for mwifiManager instance to avoid JE
+         */
+        if(mWifiManager != null){
+             boolean wifiTetherEnabled = mWifiManager.isWifiApEnabled();
+             setActive(wifiTetherEnabled);
+        } else {
+             Log.e("HotspotCondition","Wifi Service is unavailable,"
+                 +"Hence condition not refreshed");
+        }
+        /*M: }@ */
     }
 
     @Override
@@ -69,13 +81,27 @@ public class HotspotCondition extends Condition {
     }
 
     private String getSsid() {
-        WifiConfiguration wifiConfig = mWifiManager.getWifiApConfiguration();
-        if (wifiConfig == null) {
-            return mManager.getContext().getString(
-                    com.android.internal.R.string.wifi_tether_configure_ssid_default);
+        /* M: @{ due to new AOSP design of Android-P , wifiManager service will be
+         * unavailable in case of device ecryption. its a google issue
+         * already reported to Google bug id: 109588864
+         * Solution : null check for mwifiManager instance to avoid JE
+         */
+        if(mWifiManager != null){
+            WifiConfiguration wifiConfig = mWifiManager.getWifiApConfiguration();
+            if (wifiConfig == null) {
+                return mManager.getContext().getString(
+                        com.android.internal.R.string.wifi_tether_configure_ssid_default);
+            } else {
+                return wifiConfig.SSID;
+            }
         } else {
-            return wifiConfig.SSID;
+            Log.e("HotspotCondition","Wifi Service is unavailable,"
+                +"Hence condition not refreshed");
+            // return Android default SSID string in this error case
+            return mManager.getContext().getString(
+                        com.android.internal.R.string.wifi_tether_configure_ssid_default);
         }
+        /*M: }@ */
     }
 
     @Override

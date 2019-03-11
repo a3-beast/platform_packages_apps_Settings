@@ -30,6 +30,9 @@ import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 import com.android.settingslib.core.AbstractPreferenceController;
 
+import com.mediatek.settings.ext.ISettingsMiscExt;
+import com.mediatek.settings.UtilsExt;
+
 public class TimeoutPreferenceController extends AbstractPreferenceController implements
         PreferenceControllerMixin, Preference.OnPreferenceChangeListener {
 
@@ -39,6 +42,7 @@ public class TimeoutPreferenceController extends AbstractPreferenceController im
     public static final int FALLBACK_SCREEN_TIMEOUT_VALUE = 30000;
 
     private final String mScreenTimeoutKey;
+    private ISettingsMiscExt mExt = null;
 
     public TimeoutPreferenceController(Context context, String key) {
         super(context);
@@ -123,6 +127,13 @@ public class TimeoutPreferenceController extends AbstractPreferenceController im
                     : mContext.getString(R.string.screen_timeout_summary, timeoutDescription);
         }
         preference.setSummary(summary);
+        /// M: CU feature, need changed the timeoutPreference title name.
+        if (null == mExt) {
+            mExt = UtilsExt.getMiscPlugin(mContext);
+        }
+        if (null != mExt) {
+            mExt.setTimeoutPrefTitle(preference);
+        }
     }
 
 }

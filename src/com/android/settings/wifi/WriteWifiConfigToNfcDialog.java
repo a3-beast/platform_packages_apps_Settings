@@ -70,6 +70,8 @@ class WriteWifiConfigToNfcDialog extends AlertDialog
     private String mWpsNfcConfigurationToken;
     private Context mContext;
     private int mSecurity;
+    ///M: modify to solve CR:ALPS01860005
+    private boolean mNFCTagWritingSucceed;
 
     WriteWifiConfigToNfcDialog(Context context, int security) {
         super(context);
@@ -93,6 +95,7 @@ class WriteWifiConfigToNfcDialog extends AlertDialog
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "it's onCreate(),release the wakelock=" + mWakeLock.isHeld());
         mView = getLayoutInflater().inflate(R.layout.write_wifi_config_to_nfc, null);
 
         setView(mView);
@@ -121,9 +124,42 @@ class WriteWifiConfigToNfcDialog extends AlertDialog
         mCancelButton = getButton(DialogInterface.BUTTON_NEGATIVE);
     }
 
+    ///M: ALPS01860005 @{
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.d(TAG, "it's onStop(),release the wakelock=" + mWakeLock.isHeld());
+        if (mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
+        if (mNFCTagWritingSucceed) {
+            Activity activity = getOwnerActivity();
+            NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(activity);
+            if (nfcAdapter != null) {
+                nfcAdapter.disableReaderMode(activity);
+            }
+        }
+        mNFCTagWritingSucceed = false;
+    }
+    ///@}
+
+    ///M: ALPS01845400 & ALPS01961038 @{
+    @Override
+    public Bundle onSaveInstanceState() {
+        Log.d(TAG, "it's onSaveInstanceState(),release the wakelock=" + mWakeLock.isHeld());
+        if (mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
+        return super.onSaveInstanceState();
+    }
+    ///@}
+
     @Override
     public void onClick(View v) {
-        mWakeLock.acquire();
+        Log.d(TAG, "it's onClick(),release the wakelock=" + mWakeLock.isHeld());
+        if (!mWakeLock.isHeld()) {
+            mWakeLock.acquire();
+        }
 
         String password = mPasswordView.getText().toString();
         String wpsNfcConfigurationToken = mWifiManager.getCurrentNetworkWpsNfcConfigurationToken();
@@ -192,6 +228,8 @@ class WriteWifiConfigToNfcDialog extends AlertDialog
                     });
                     setViewText(mLabelView, R.string.status_write_success);
                     setViewText(mCancelButton, com.android.internal.R.string.done_label);
+                    ///M: modify to solve CR:ALPS01860005
+                    mNFCTagWritingSucceed = true;
                 } catch (IOException e) {
                     setViewText(mLabelView, R.string.status_failed_to_write);
                     Log.e(TAG, "Unable to write Wi-Fi config to NFC tag.", e);
@@ -213,6 +251,7 @@ class WriteWifiConfigToNfcDialog extends AlertDialog
 
     @Override
     public void dismiss() {
+        Log.d(TAG, "it's dismiss(),release the wakelock=" + mWakeLock.isHeld());
         if (mWakeLock.isHeld()) {
             mWakeLock.release();
         }

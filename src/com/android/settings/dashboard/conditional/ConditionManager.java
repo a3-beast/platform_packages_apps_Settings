@@ -73,9 +73,12 @@ public class ConditionManager implements LifecycleObserver, OnResume, OnPause {
     }
 
     public void refreshAll() {
-        final int N = mConditions.size();
+        /// M: ALPS02793369 When refresh state, notifyChanged maybe called and
+        /// mConditions will be re-sort.
+        ArrayList<Condition> list = new ArrayList<>(mConditions);
+        final int N = list.size();
         for (int i = 0; i < N; i++) {
-            mConditions.get(i).refreshState();
+            list.get(i).refreshState();
         }
     }
 

@@ -30,6 +30,10 @@ public abstract class WifiTetherBasePreferenceController extends AbstractPrefere
 
     public interface OnTetherConfigUpdateListener {
         void onTetherConfigUpdated();
+        /// M: Hotspot manager settings @{
+        void onSecurityChanged(); // Change security
+        void onNetworkReset();    // Reset OOB
+        /// @}
     }
 
     protected final WifiManager mWifiManager;

@@ -22,11 +22,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.SystemProperties;
+/// M: Add for checking current user.
+import android.os.UserManager;
 import android.provider.SettingsSlicesContract;
 import android.support.v14.preference.SwitchPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.TelephonyProperties;
@@ -43,6 +46,8 @@ public class AirplaneModePreferenceController extends TogglePreferenceController
         implements LifecycleObserver, OnResume, OnPause,
         AirplaneModeEnabler.OnAirplaneModeChangedListener {
 
+    private static final String TAG = "AirplaneModePreferenceController";
+
     public static final int REQUEST_CODE_EXIT_ECM = 1;
 
     private static final String EXIT_ECM_RESULT = "exit_ecm_result";
@@ -52,9 +57,14 @@ public class AirplaneModePreferenceController extends TogglePreferenceController
     private AirplaneModeEnabler mAirplaneModeEnabler;
     private SwitchPreference mAirplaneModePreference;
 
+    /// M: Add for checking current user.
+    private final Context mContext;
+
     public AirplaneModePreferenceController(Context context, String key) {
         super(context, key);
         mMetricsFeatureProvider = FeatureFactory.getFactory(context).getMetricsFeatureProvider();
+        /// M: Keep context to check current user.
+        mContext = context;
         mAirplaneModeEnabler = new AirplaneModeEnabler(mContext, mMetricsFeatureProvider, this);
     }
 
@@ -64,16 +74,26 @@ public class AirplaneModePreferenceController extends TogglePreferenceController
 
     @Override
     public boolean handlePreferenceTreeClick(Preference preference) {
-        if (KEY_AIRPLANE_MODE.equals(preference.getKey()) && Boolean.parseBoolean(
-                SystemProperties.get(TelephonyProperties.PROPERTY_INECM_MODE))) {
-            // In ECM mode launch ECM app dialog
-            if (mFragment != null) {
-                mFragment.startActivityForResult(
-                        new Intent(TelephonyIntents.ACTION_SHOW_NOTICE_ECM_BLOCK_OTHERS, null),
-                        REQUEST_CODE_EXIT_ECM);
+        /// M: The property may be a conbination string of "true" and "false". @{
+        if (KEY_AIRPLANE_MODE.equals(preference.getKey())) {
+            String ecbMode = SystemProperties.get(
+                    TelephonyProperties.PROPERTY_INECM_MODE, "false");
+            /// M: Launch ECM app dialog in ECM mode for host owner only.
+            boolean isAdmin = UserManager.get(mContext).isAdminUser();
+            Log.d(TAG, "Click airplane mode, ECM=" + ecbMode
+                    + ", isAdmin=" + isAdmin
+                    + ", fragment=" + (mFragment == null ? "null" : mFragment));
+            if (ecbMode != null && ecbMode.contains("true") && isAdmin) {
+                // In ECM mode launch ECM app dialog
+                if (mFragment != null) {
+                    mFragment.startActivityForResult(
+                            new Intent(TelephonyIntents.ACTION_SHOW_NOTICE_ECM_BLOCK_OTHERS, null),
+                            REQUEST_CODE_EXIT_ECM);
+                }
+                return true;
             }
-            return true;
         }
+        /// @}
 
         return false;
     }
@@ -116,13 +136,24 @@ public class AirplaneModePreferenceController extends TogglePreferenceController
         }
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    /// M: Add return value to handle the activity result.
+    public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_EXIT_ECM) {
-            Boolean isChoiceYes = data.getBooleanExtra(EXIT_ECM_RESULT, false);
-            // Set Airplane mode based on the return value and checkbox state
-            mAirplaneModeEnabler.setAirplaneModeInECM(isChoiceYes,
-                    mAirplaneModePreference.isChecked());
+            /// M: data may be null, handle it to avoid JE.
+            Boolean isChoiceYes = (data == null ? false :
+                    data.getBooleanExtra(EXIT_ECM_RESULT, false));
+            Log.d(TAG, "Exit ECM, result=" + isChoiceYes
+                    + ", data=" + (data == null ? "null" : data));
+            if (mAirplaneModePreference != null
+                    && mAirplaneModeEnabler != null) {
+                Log.d(TAG, "Exit ECM, checked=" + mAirplaneModePreference.isChecked());
+                // Set Airplane mode based on the return value and checkbox state
+                mAirplaneModeEnabler.setAirplaneModeInECM(isChoiceYes,
+                        mAirplaneModePreference.isChecked());
+            }
+            return true;
         }
+        return false;
     }
 
     @Override

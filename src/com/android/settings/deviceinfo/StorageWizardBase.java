@@ -24,6 +24,7 @@ import static com.android.settings.deviceinfo.StorageSettings.TAG;
 import android.annotation.LayoutRes;
 import android.annotation.NonNull;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -66,6 +67,13 @@ public abstract class StorageWizardBase extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        /// M: ALPS02994518 If start by monkey, finish @ {
+        if (!isFinishing() && ActivityManager.isUserAMonkey()) {
+            Log.d(TAG, "finish due to monkey user");
+            finish();
+            return;
+        }
+        /// @ }
 
         mStorage = getSystemService(StorageManager.class);
 
@@ -98,7 +106,9 @@ public abstract class StorageWizardBase extends Activity {
 
     @Override
     protected void onDestroy() {
-        mStorage.unregisterListener(mStorageListener);
+        if(mStorage != null && mDisk != null) {
+            mStorage.unregisterListener(mStorageListener);
+        }
         super.onDestroy();
     }
 

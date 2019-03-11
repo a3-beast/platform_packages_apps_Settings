@@ -16,7 +16,12 @@
 
 package com.android.settings.deviceinfo;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+/// M: Add for updating phone number.
+import android.os.Bundle;
 import android.support.annotation.VisibleForTesting;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
@@ -26,17 +31,34 @@ import android.telephony.TelephonyManager;
 import android.text.BidiFormatter;
 import android.text.TextDirectionHeuristics;
 import android.text.TextUtils;
+import android.util.Log;
+
+
+import com.android.internal.telephony.PhoneConstants;
 
 import com.android.settings.R;
 import com.android.settings.core.PreferenceControllerMixin;
 import com.android.settingslib.DeviceInfoUtils;
 import com.android.settingslib.core.AbstractPreferenceController;
+/// M: Add for updating phone number. @{
+import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.android.settingslib.core.lifecycle.LifecycleObserver;
+import com.android.settingslib.core.lifecycle.events.OnCreate;
+import com.android.settingslib.core.lifecycle.events.OnDestroy;
+/// @}
+/// M: Add for SIM settings plugin.
+import com.mediatek.settings.UtilsExt;
+/// M: Add for SIM status plugin.
+import com.mediatek.settings.ext.IStatusExt;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/// M: Revise for updating phone number.
 public class PhoneNumberPreferenceController extends AbstractPreferenceController implements
-        PreferenceControllerMixin {
+        PreferenceControllerMixin, LifecycleObserver, OnCreate, OnDestroy {
+
+    private static final String TAG = "PhoneNumberPreferenceController";
 
     private final static String KEY_PHONE_NUMBER = "phone_number";
 
@@ -44,12 +66,23 @@ public class PhoneNumberPreferenceController extends AbstractPreferenceControlle
     private final SubscriptionManager mSubscriptionManager;
     private final List<Preference> mPreferenceList = new ArrayList<>();
 
-    public PhoneNumberPreferenceController(Context context) {
+    private IStatusExt mStatusExt;
+
+    /// M: Revise for updating phone number. @{
+    public PhoneNumberPreferenceController(Context context, Lifecycle lifecycle) {
         super(context);
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         mSubscriptionManager = (SubscriptionManager) context.getSystemService(
                 Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+
+        // Add this controller into lifecycle.
+        if (lifecycle != null) {
+            lifecycle.addObserver(this);
+        }
+        /// M: Add for SIM status plugin.
+        mStatusExt = UtilsExt.getStatusExt(context);
     }
+    /// @}
 
     @Override
     public String getPreferenceKey() {
@@ -94,7 +127,10 @@ public class PhoneNumberPreferenceController extends AbstractPreferenceControlle
             return mContext.getString(R.string.device_info_default);
         }
 
-        return getFormattedPhoneNumber(subscriptionInfo);
+        String number = mStatusExt.updatePhoneNumber(
+                getFormattedPhoneNumber(subscriptionInfo).toString(),
+                subscriptionInfo.getSimSlotIndex(), mContext);
+        return number;
     }
 
     private CharSequence getPreferenceTitle(int simSlot) {
@@ -129,4 +165,59 @@ public class PhoneNumberPreferenceController extends AbstractPreferenceControlle
     Preference createNewPreference(Context context) {
         return new Preference(context);
     }
+
+    /// M: Register listener for updating phone number. @{
+    private final SubscriptionManager.OnSubscriptionsChangedListener mOnSubscriptionsChangeListener
+            = new SubscriptionManager.OnSubscriptionsChangedListener() {
+        @Override
+        public void onSubscriptionsChanged() {
+            Log.d(TAG, "onSubscriptionsChanged");
+            updateState(null);
+        }
+    };
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        // Register listener for updating phone number.
+        mSubscriptionManager.addOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+
+        // MTK-START
+        mContext.registerReceiver(mAllRecordsLoadedReceiver,
+                new IntentFilter(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED));
+        // MTK-END
+    }
+
+    @Override
+    public void onDestroy() {
+        // Unregister listener.
+        mSubscriptionManager.removeOnSubscriptionsChangedListener(mOnSubscriptionsChangeListener);
+        mContext.unregisterReceiver(mAllRecordsLoadedReceiver);
+    }
+    /// @}
+
+
+    // For refresh SIM infomation
+    private final BroadcastReceiver mAllRecordsLoadedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int simSlotNumber = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+            String action = intent.getAction();
+
+            if (TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED.equals(action)) {
+                Bundle extras = intent.getExtras();
+                if (extras == null) {
+                    return;
+                }
+                simSlotNumber = extras.getInt(PhoneConstants.PHONE_KEY, -1);
+                if (simSlotNumber != -1) {
+                    final Preference simStatusPreference = mPreferenceList.get(simSlotNumber);
+                    simStatusPreference.setTitle(getPreferenceTitle(simSlotNumber));
+                    simStatusPreference.setSummary(getPhoneNumber(simSlotNumber));
+                }
+
+
+            }
+            Log.d(TAG, "action = " + action + ", simSlotNumber = " + simSlotNumber);
+        }
+    };
 }

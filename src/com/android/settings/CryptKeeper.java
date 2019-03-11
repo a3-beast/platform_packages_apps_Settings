@@ -18,9 +18,11 @@ package com.android.settings;
 
 import android.app.Activity;
 import android.app.StatusBarManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources.NotFoundException;
@@ -193,6 +195,7 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
 
         @Override
         protected void onPostExecute(Integer failedAttempts) {
+            Log.d(TAG, "failedAttempts : " + failedAttempts);
             if (failedAttempts == 0) {
                 // The password was entered successfully. Simply do nothing
                 // and wait for the service restart to switch to surfacefligner
@@ -361,15 +364,18 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
      */
     private void notifyUser() {
         if (mNotificationCountdown > 0) {
+            Log.d(TAG, "Counting down to notify user..." + mNotificationCountdown);
             --mNotificationCountdown;
         } else if (mAudioManager != null) {
+            Log.d(TAG, "Notifying user that we are waiting for input...");
             try {
                 // Play the standard keypress sound at full volume. This should be available on
                 // every device. We cannot play a ringtone here because media services aren't
                 // available yet. A DTMF-style tone is too soft to be noticed, and might not exist
                 // on tablet devices. The idea is to alert the user that something is needed: this
                 // does not have to be pleasing.
-                mAudioManager.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, 100);
+                ///M: Notifiy has no sound and will cause WTF
+                mAudioManager.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD);
             } catch (Exception e) {
                 Log.w(TAG, "notifyUser: Exception while playing sound: " + e);
             }
@@ -398,7 +404,7 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Log.d(TAG, "onCreate()");
         // If we are not encrypted or encrypting, get out quickly.
         final String state = SystemProperties.get("vold.decrypt");
         if (!isDebugView() && ("".equals(state) || DECRYPT_STATE.equals(state))) {
@@ -454,6 +460,8 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
     @Override
     public void onStart() {
         super.onStart();
+        Log.d(TAG, "onStart()");
+        listenPhoneStateBroadcast(this);
         setupUi();
     }
 
@@ -519,7 +527,9 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
 
                     passwordEntryInit();
 
-                    findViewById(android.R.id.content).setSystemUiVisibility(View.STATUS_BAR_DISABLE_BACK);
+                    /// M: ALPS03867189 hide navigation to fix flash issue.
+                    findViewById(android.R.id.content).setSystemUiVisibility(
+                        View.STATUS_BAR_DISABLE_BACK | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
                     if (mLockPatternView != null) {
                         mLockPatternView.setInStealthMode(!pattern_visible);
@@ -542,6 +552,7 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
     @Override
     public void onStop() {
         super.onStop();
+        removePhoneStateBroadcast(this);
         mHandler.removeMessages(MESSAGE_UPDATE_PROGRESS);
         mHandler.removeMessages(MESSAGE_NOTIFY);
     }
@@ -562,12 +573,22 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        Log.d(TAG, "onDestroy()");
         if (mWakeLock != null) {
             Log.d(TAG, "Releasing and destroying wakelock");
-            mWakeLock.release();
+            /// M:  ALPS01852753 {@
+            if (mWakeLock.isHeld()) {
+                mWakeLock.release();
+            }
+            /// @}
             mWakeLock = null;
         }
+        /// M: ALPS02489059, Rollback all status bar state
+        ///otherwise it will be stored in next activity {@
+        if (mStatusBar != null) {
+            mStatusBar.disable(StatusBarManager.DISABLE_NONE);
+        }
+        /// @}
     }
 
     /**
@@ -741,6 +762,7 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
      };
 
      private void passwordEntryInit() {
+         Log.d(TAG, "passwordEntryInit().");
         // Password/pin case
         mPasswordEntry = (ImeAwareEditText) findViewById(R.id.passwordEntry);
         if (mPasswordEntry != null){
@@ -770,7 +792,9 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
         final View imeSwitcher = findViewById(R.id.switch_ime_button);
         final InputMethodManager imm = (InputMethodManager) getSystemService(
                 Context.INPUT_METHOD_SERVICE);
-        if (imeSwitcher != null && hasMultipleEnabledIMEsOrSubtypes(imm, false)) {
+        /// M: check pattern lock type
+        if (imeSwitcher != null && !isPatternLockType()
+                 && hasMultipleEnabledIMEsOrSubtypes(imm, false)) {
             imeSwitcher.setVisibility(View.VISIBLE);
             imeSwitcher.setOnClickListener(new OnClickListener() {
                     @Override
@@ -957,8 +981,10 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
         if (getTelecomManager().isInCall()) {
             // Show "return to call"
             textId = R.string.cryptkeeper_return_to_call;
+            Log.d(TAG, "show cryptkeeper_return_to_call");
         } else {
             textId = R.string.cryptkeeper_emergency_call;
+            Log.d(TAG, "show cryptkeeper_emergency_call");
         }
         emergencyCall.setText(textId);
     }
@@ -969,6 +995,7 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
 
     private void takeEmergencyCallAction() {
         TelecomManager telecomManager = getTelecomManager();
+        Log.d(TAG, "onClick Button telecomManager.isInCall() = " + telecomManager.isInCall());
         if (telecomManager.isInCall()) {
             telecomManager.showInCallScreen(false /* showDialpad */);
         } else {
@@ -1033,5 +1060,49 @@ public class CryptKeeper extends Activity implements TextView.OnEditorActionList
         Log.d(TAG, "Disabling component " + name);
         pm.setComponentEnabledSetting(name, PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 PackageManager.DONT_KILL_APP);
+    }
+
+    //*** M: ALPS01855069 update button text {@
+    private class PhoneStateBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (TelephonyManager.ACTION_PHONE_STATE_CHANGED.equals(action)) {
+                Log.d(TAG, "PhoneStateBroadcastReceiver action:" + action + " state:"
+                                + intent.getExtra(PhoneConstants.STATE_KEY));
+                updateEmergencyCallButtonState();
+            }
+        }
+    }
+
+    private PhoneStateBroadcastReceiver mPhoneStateReceiver;
+
+    private void listenPhoneStateBroadcast(Activity activity) {
+        mPhoneStateReceiver = new PhoneStateBroadcastReceiver();
+        IntentFilter intentFilter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+        activity.registerReceiver(mPhoneStateReceiver, intentFilter);
+    }
+
+    private void removePhoneStateBroadcast(Activity activity) {
+        if (mPhoneStateReceiver != null) {
+            activity.unregisterReceiver(mPhoneStateReceiver);
+            mPhoneStateReceiver = null;
+        }
+    }
+    /// @}
+
+    ///M: CR ALPS02260191.
+    private boolean isPatternLockType() {
+        boolean isPatternType = false;
+        try {
+             final IStorageManager service = getStorageManager();
+             if (service != null) {
+                 int type = service.getPasswordType();
+                 isPatternType = service.getPasswordType() == StorageManager.CRYPT_TYPE_PATTERN;
+             }
+        } catch (Exception e) {
+             Log.e(TAG, "Error calling mount service " + e);
+        }
+        return isPatternType;
     }
 }

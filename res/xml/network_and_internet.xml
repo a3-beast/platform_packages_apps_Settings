@@ -92,6 +92,11 @@
         settings:userRestriction="no_config_vpn"
         settings:useAdminDisabledSummary="true" />
 
+    <!--M: Add RCSE Settings entrance -->
+    <com.android.settingslib.RestrictedPreference
+        android:key="rcse_settings"
+        android:title="@string/rcse_settings_title" />
+
     <com.android.settings.network.PrivateDnsModeDialogPreference
         android:key="private_dns_settings"
         android:title="@string/select_private_dns_configuration_title"

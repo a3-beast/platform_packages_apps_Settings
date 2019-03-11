@@ -90,4 +90,9 @@ public class ProgressCategory extends ProgressCategoryBase {
         mProgress = progressOn;
         notifyChanged();
     }
+
+    ///M:
+    public void setNoDeviceFoundAdded(boolean noDeviceFoundAdded) {
+        mNoDeviceFoundAdded = noDeviceFoundAdded;
+    }
 }

@@ -203,6 +203,16 @@ public abstract class DashboardFragment extends SettingsPreferenceFragment
         }
     }
 
+    ///M: ALPS03493558 Fix Settings SummaryLoader leak. @{
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mSummaryLoader != null) {
+            mSummaryLoader.release();
+        }
+    }
+    /// @}
+
     @Override
     protected abstract int getPreferenceScreenResId();
 

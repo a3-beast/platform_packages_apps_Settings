@@ -19,6 +19,7 @@ import android.support.v7.preference.Preference;
 import com.android.settings.core.PreferenceControllerMixin;
 import com.android.settings.dream.DreamSettings;
 import com.android.settingslib.core.AbstractPreferenceController;
+import com.mediatek.settings.FeatureOption;
 
 public class ScreenSaverPreferenceController extends AbstractPreferenceController implements
         PreferenceControllerMixin {
@@ -32,7 +33,9 @@ public class ScreenSaverPreferenceController extends AbstractPreferenceControlle
     @Override
     public boolean isAvailable() {
         return mContext.getResources().getBoolean(
-                com.android.internal.R.bool.config_dreamsSupported);
+                com.android.internal.R.bool.config_dreamsSupported)
+                /// M: Remove Daydream when low ram
+                && !FeatureOption.MTK_GMO_RAM_OPTIMIZE;
     }
 
     @Override

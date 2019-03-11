@@ -27,6 +27,7 @@ import android.support.v4.text.BidiFormatter;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.settings.R;
 import com.android.settings.Utils;
@@ -36,6 +37,8 @@ import com.android.settingslib.core.lifecycle.Lifecycle;
 import com.android.settingslib.core.lifecycle.LifecycleObserver;
 import com.android.settingslib.core.lifecycle.events.OnPause;
 import com.android.settingslib.core.lifecycle.events.OnResume;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.ISettingsMiscExt;
 
 /**
  * {@link PreferenceControllerMixin} that updates MAC/IP address.
@@ -51,10 +54,12 @@ public class WifiInfoPreferenceController extends AbstractPreferenceController
 
     private Preference mWifiMacAddressPref;
     private Preference mWifiIpAddressPref;
+    private ISettingsMiscExt mExt;
 
     public WifiInfoPreferenceController(Context context, Lifecycle lifecycle,
             WifiManager wifiManager) {
         super(context);
+        mExt = UtilsExt.getMiscPlugin(mContext);
         mWifiManager = wifiManager;
         mFilter = new IntentFilter();
         mFilter.addAction(WifiManager.LINK_CONFIGURATION_CHANGED_ACTION);
@@ -100,14 +105,16 @@ public class WifiInfoPreferenceController extends AbstractPreferenceController
             final int macRandomizationMode = Settings.Global.getInt(mContext.getContentResolver(),
                     Settings.Global.WIFI_CONNECTED_MAC_RANDOMIZATION_ENABLED, 0);
             final String macAddress = wifiInfo == null ? null : wifiInfo.getMacAddress();
-
+            Log.i("mtk81234", macAddress == null ? "macAddress = null" : macAddress);
             if (TextUtils.isEmpty(macAddress)) {
                 mWifiMacAddressPref.setSummary(R.string.status_unavailable);
             } else if (macRandomizationMode == 1
                     && WifiInfo.DEFAULT_MAC_ADDRESS.equals(macAddress)) {
                 mWifiMacAddressPref.setSummary(R.string.wifi_status_mac_randomized);
             } else {
-                mWifiMacAddressPref.setSummary(macAddress);
+                mWifiMacAddressPref.setSummary(
+                        mExt.customizeMacAddressString(macAddress,
+                        mContext.getString(R.string.status_unavailable)));
             }
         }
         if (mWifiIpAddressPref != null) {

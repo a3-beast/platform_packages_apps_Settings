@@ -24,7 +24,11 @@ import android.content.DialogInterface;
 import android.provider.Settings;
 import android.support.annotation.VisibleForTesting;
 import android.widget.Toast;
-
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.os.Bundle;
+import android.util.Log;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
 import com.android.settings.overlay.FeatureFactory;
@@ -40,7 +44,8 @@ import com.android.settingslib.bluetooth.Utils.ErrorListener;
 public final class Utils {
     static final boolean V = com.android.settingslib.bluetooth.Utils.V; // verbose logging
     static final boolean D =  com.android.settingslib.bluetooth.Utils.D;  // regular logging
-
+    private static final String KEY_ERROR = "errorMessage";
+    private static final String TAG = "Bluetooth.Utils";
     private Utils() {
     }
 
@@ -105,13 +110,37 @@ public final class Utils {
         String message = context.getString(messageResId, name);
         Context activity = manager.getForegroundActivity();
         if (manager.isForegroundActivity()) {
+            /** M: Google original code phased out to adapt to our feature
             new AlertDialog.Builder(activity)
                 .setTitle(R.string.bluetooth_error_title)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
+             */
+            /// M: Use DialogFragment instead of AlertDialog @{
+            Log.d(TAG, "show ErrorDialogFragment, message is " + message);
+            ErrorDialogFragment dialog = new ErrorDialogFragment();
+            final Bundle args = new Bundle();
+            args.putString(KEY_ERROR, message);
+            dialog.setArguments(args);
+            dialog.show(((Activity) activity).getFragmentManager(), "Error");
+            /// @}
         } else {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public static class ErrorDialogFragment extends DialogFragment {
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final String message = getArguments().getString(KEY_ERROR);
+
+            return new  AlertDialog.Builder(getActivity())
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setTitle(R.string.bluetooth_error_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show();
         }
     }
 

@@ -377,6 +377,12 @@
         <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
 
+
+    <style name="SetupWizardStorageStyle" parent="@style/SuwThemeGlif.Light">
+        <!-- M: Add padding top to avoid title overlapped with status bar, reuse fingerprint config -->
+        <item name="suwDecorPaddingTop">@dimen/fingerprint_decor_padding_top</item>
+    </style>
+
     <style name="PreviewPagerPageIndicator">
         <item name="dotGap">8dp</item>
         <item name="pageIndicatorColor">?android:attr/colorControlNormal</item>

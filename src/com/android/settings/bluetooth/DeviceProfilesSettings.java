@@ -34,6 +34,8 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
@@ -51,6 +53,8 @@ import com.android.settingslib.bluetooth.PbapServerProfile;
 public final class DeviceProfilesSettings extends InstrumentedDialogFragment implements
         CachedBluetoothDevice.Callback, DialogInterface.OnClickListener, OnClickListener {
     private static final String TAG = "DeviceProfilesSettings";
+    ///M:
+    private AlertDialog mAlertDialog;
 
     public static final String ARG_DEVICE_ADDRESS = "device_address";
 
@@ -103,12 +107,30 @@ public final class DeviceProfilesSettings extends InstrumentedDialogFragment imp
         mProfileLabel = (TextView) mRootView.findViewById(R.id.profiles_label);
         final EditText deviceName = (EditText) mRootView.findViewById(R.id.name);
         deviceName.setText(mCachedDevice.getName(), TextView.BufferType.EDITABLE);
-        return new AlertDialog.Builder(getContext())
-                .setView(mRootView)
-                .setNeutralButton(R.string.forget, this)
-                .setPositiveButton(R.string.okay, this)
-                .setTitle(R.string.bluetooth_preference_paired_devices)
-                .create();
+        mAlertDialog = new AlertDialog.Builder(getContext())
+        .setView(mRootView)
+        .setNeutralButton(R.string.forget, this)
+        .setPositiveButton(R.string.okay, this)
+        .setTitle(R.string.bluetooth_preference_paired_devices)
+        .create();
+
+        ///M: Avoid unEffective name
+        deviceName.addTextChangedListener(new TextWatcher() {
+            public void afterTextChanged(Editable s) {
+                boolean isEffective = s.toString().trim().length() > 0;
+                mAlertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(isEffective);
+            }
+
+            public void beforeTextChanged(CharSequence s, int start,
+                         int count, int after) {
+            }
+
+            public void onTextChanged(CharSequence s, int start,
+                         int before, int count) {
+            }
+        });
+
+        return mAlertDialog;
     }
 
     @Override
@@ -127,13 +149,17 @@ public final class DeviceProfilesSettings extends InstrumentedDialogFragment imp
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "onDestroy");
         if (mDisconnectDialog != null) {
             mDisconnectDialog.dismiss();
             mDisconnectDialog = null;
         }
-        if (mCachedDevice != null) {
-            mCachedDevice.unregisterCallback(this);
-        }
+        ///M:
+        mAlertDialog = null;
+
+        //if (mCachedDevice != null) {
+        //   mCachedDevice.unregisterCallback(this);
+        //}
     }
 
     @Override
@@ -144,10 +170,11 @@ public final class DeviceProfilesSettings extends InstrumentedDialogFragment imp
     @Override
     public void onResume() {
         super.onResume();
-
+        Log.d(TAG, "onResume");
         mManager.setForegroundActivity(getActivity());
         if (mCachedDevice != null) {
             mCachedDevice.registerCallback(this);
+            Log.d(TAG, "onResume, registerCallback");
             if (mCachedDevice.getBondState() == BluetoothDevice.BOND_NONE) {
                 dismiss();
                 return;
@@ -160,9 +187,10 @@ public final class DeviceProfilesSettings extends InstrumentedDialogFragment imp
     @Override
     public void onPause() {
         super.onPause();
-
+        Log.d(TAG, "onPause");
         if (mCachedDevice != null) {
             mCachedDevice.unregisterCallback(this);
+            Log.d(TAG, "onPause, unregisterCallback");
         }
 
         mManager.setForegroundActivity(null);

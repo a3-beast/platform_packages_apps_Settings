@@ -43,7 +43,45 @@
         android:title="@string/wifi_hotspot_auto_off_title"
         android:summary="@string/wifi_hotspot_auto_off_summary" />
 
-    <ListPreference
+    <com.android.settings.widget.HotspotApBandSelectionPreference
         android:key="wifi_tether_network_ap_band"
-        android:title="@string/wifi_hotspot_ap_band_title" />
+        android:title="@string/wifi_hotspot_ap_band_title"
+        android:dialogLayout="@layout/hotspot_ap_band_selection_dialog"
+        android:dialogTitle="@string/wifi_hotspot_ap_band_title"
+        android:negativeButtonText="@string/cancel"
+        android:positiveButtonText="@string/apply"/>
+
+    <!-- M: Hotspot manager settings start-->
+    <Preference
+            android:key="wifi_tether_network_reset"
+            android:title="@string/wifi_ap_reset_OOB"
+            android:summary="@string/summary_placeholder" />
+
+    <ListPreference
+        android:key="wifi_tether_network_connections"
+        android:title="@string/wifi_ap_max_connection_title"
+        android:summary="@string/summary_placeholder"
+        android:entries="@array/wifi_ap_max_connection_entries"
+        android:entryValues="@array/wifi_ap_max_connection_entries_value" />
+
+    <Preference
+            android:key="wifi_tether_connected_user"
+            android:title="@string/wifi_ap_connected_title"
+            android:summary="@string/summary_placeholder"
+            android:fragment="com.mediatek.settings.wifi.tether.WifiTetherUserListSettingsConnected">
+        <extra
+            android:name="usermode"
+            android:value="0" />
+    </Preference>
+
+    <Preference
+            android:key="wifi_tether_blocked_user"
+            android:title="@string/wifi_ap_blocked_title"
+            android:summary="@string/summary_placeholder"
+            android:fragment="com.mediatek.settings.wifi.tether.WifiTetherUserListSettingsBlocked">
+        <extra
+            android:name="usermode"
+            android:value="1" />
+    </Preference>
+    <!-- M: Hotspot manager settings end-->
 </PreferenceScreen>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.setupwizardlib.GlifLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout="@layout/suw_glif_blank_template">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <FrameLayout android:id="@+id/previewParent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop = "50px"
+        android:layout_marginBottom = "50px"
+        android:background="#FFFFFF"
+        android:orientation="horizontal" >
+
+        <TextureView android:id="@+id/previewFrame"
+            android:layout_width="720px"
+            android:layout_height="720px"
+            android:layout_gravity="center" />
+
+        <ImageView
+            android:id="@+id/image_veil"
+            android:src="@drawable/face_id_ic_veil"
+            android:layout_width="720px"
+            android:layout_gravity="center"
+            android:layout_height="720px" />
+
+       <com.mediatek.faceid.CircleProgressView
+            android:id="@+id/timer_circle"
+            android:layout_width="760px"
+            android:layout_gravity="center"
+            android:layout_height="760px" />
+
+    </FrameLayout>
+
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:padding = "20dp"
+        android:orientation="vertical">
+
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView android:id="@+id/status"
+                stype="@style/info_label"
+                android:padding = "10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_centerHorizontal="true"
+                android:textSize = "16sp"
+                android:text="@string/faceid_message_to_user_default" />
+
+            <Button android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/faceid_confirm_button"
+                    android:layout_gravity="center"
+                    style="@style/SetupWizardButton.Positive"
+                    android:visibility="gone"
+                    android:text="@string/okay"/>
+        </LinearLayout>
+
+        <Space  android:id="@+id/faceid_space"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/SetupWizardButton.Negative"
+                    android:id="@+id/faceid_cancel_button"
+                    android:text="@string/cancel"/>
+
+            <Space  android:id="@+id/faceid_space"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <Button android:id="@+id/faceid_go_button"
+                    style="@style/SetupWizardButton.Positive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:text="@string/faceid_start_text"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+</com.android.setupwizardlib.GlifLayout>

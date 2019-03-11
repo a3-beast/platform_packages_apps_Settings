@@ -95,7 +95,7 @@ public class StorageWizardMigrateConfirm extends StorageWizardBase {
         // Ensure that all users are unlocked so that we can move their data
         if (StorageManager.isFileEncryptedNativeOrEmulated()) {
             for (UserInfo user : getSystemService(UserManager.class).getUsers()) {
-                if (!StorageManager.isUserKeyUnlocked(user.id)) {
+                if ((user.isInitialized()) && (!StorageManager.isUserKeyUnlocked(user.id))) {
                     Log.d(TAG, "User " + user.id + " is currently locked; requesting unlock");
                     final CharSequence description = TextUtils.expandTemplate(
                             getText(R.string.storage_wizard_move_unlock), user.name);

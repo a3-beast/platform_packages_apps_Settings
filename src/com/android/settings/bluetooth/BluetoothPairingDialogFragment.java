@@ -39,6 +39,8 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
 import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A dialogFragment used by {@link BluetoothPairingDialog} to create an appropriately styled dialog
@@ -85,8 +87,25 @@ public class BluetoothPairingDialogFragment extends InstrumentedDialogFragment i
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
     }
 
+    /// M: use it to filter the input which is not number, english letter or english symbols
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
+        if (mPairingView.getInputType() != InputType.TYPE_CLASS_NUMBER) {
+            String pinCodeStr = s.toString();
+            Log.d(TAG, "onTextChanged " + pinCodeStr);
+            String str = stringFilter(pinCodeStr);
+            if (!pinCodeStr.equals(str)) {
+                mPairingView.setText(str);
+                mPairingView.setSelection(str.length());
+            }
+        }
+    }
+
+    private String stringFilter(String text) {
+        String regEx = "[^\\x20-\\x7e]";
+        Pattern pattern = Pattern.compile(regEx);
+        Matcher matcher = pattern.matcher(text);
+        return matcher.replaceAll("").trim();
     }
 
     @Override

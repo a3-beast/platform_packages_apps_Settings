@@ -60,4 +60,12 @@ public class WifiTetherSecurityPreferenceController extends WifiTetherBasePrefer
         // WPA2 PSK
         return mSecurityEntries[0];
     }
+
+    // M: Add method for reset Network will set security to WAP2_PSK
+    public void setSecurityType() {
+        final ListPreference preference = (ListPreference) mPreference;
+        mSecurityValue = WifiConfiguration.KeyMgmt.WPA2_PSK;
+        preference.setSummary(mSecurityEntries[0]);
+    }
+
 }

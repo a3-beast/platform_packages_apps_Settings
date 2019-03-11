@@ -20,8 +20,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.util.Log;
 
 import com.android.settings.Utils;
 
@@ -35,11 +37,17 @@ public class ProfileUpdateReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(final Context context, Intent intent) {
+        Log.d("ProfileUpdateReceiver", "Profile photo changed, get the PROFILE_CHANGED receiver.");
         // Profile changed, lets get the photo and write to user manager
         new Thread() {
             public void run() {
                 UserSettings.copyMeProfilePhoto(context, null);
-                copyProfileName(context);
+                /// M: Fix ALPS01262605, Since the profile is not equal to userinfo,
+                //we do not need to change the userinfo(nick name) while we modify the profile
+                String isGms = SystemProperties.get("ro.com.google.gmsversion", null);
+                if (isGms != null && !isGms.isEmpty()) {
+                    copyProfileName(context);
+                }
             }
         }.start();
     }

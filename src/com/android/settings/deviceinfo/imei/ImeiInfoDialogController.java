@@ -28,6 +28,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.TtsSpan;
+import android.util.Log;
 
 import com.android.internal.telephony.PhoneConstants;
 import com.android.settings.R;
@@ -35,6 +36,8 @@ import com.android.settings.R;
 import java.util.List;
 
 public class ImeiInfoDialogController {
+
+    private final static String TAG = "ImeiInfoDialogController";
 
     @VisibleForTesting
     static final int ID_PRL_VERSION_VALUE = R.id.prl_version_value;
@@ -53,6 +56,12 @@ public class ImeiInfoDialogController {
     static final int ID_GSM_SETTINGS = R.id.gsm_settings;
 
     private static CharSequence getTextAsDigits(CharSequence text) {
+        /// M: Text may be null. @{
+        if (text == null) {
+            return "";
+        }
+        /// @}
+
         if (TextUtils.isDigitsOnly(text)) {
             final Spannable spannable = new SpannableStringBuilder(text);
             final TtsSpan span = new TtsSpan.DigitsBuilder(text.toString()).build();
@@ -71,16 +80,26 @@ public class ImeiInfoDialogController {
         mDialog = dialog;
         mSlotId = slotId;
         final Context context = dialog.getContext();
-        mTelephonyManager = (TelephonyManager) context.getSystemService(
-                Context.TELEPHONY_SERVICE);
         mSubscriptionInfo = getSubscriptionInfo(context, slotId);
+
+        /// M: Create TelephonyManager for subscription. @{
+        if (mSubscriptionInfo != null) {
+            mTelephonyManager = TelephonyManager.from(context).createForSubscriptionId(
+                    mSubscriptionInfo.getSubscriptionId());
+        } else 
+            mTelephonyManager = (TelephonyManager) context.getSystemService(
+                    Context.TELEPHONY_SERVICE);{
+        }
+        /// @}
     }
 
     /**
      * Sets IMEI/MEID information based on whether the device is CDMA or GSM.
      */
     public void populateImeiInfo() {
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+        /// M: Get the phone type for the specified SIM slot.
+        if (mTelephonyManager.getCurrentPhoneTypeForSlot(mSlotId)
+                == TelephonyManager.PHONE_TYPE_CDMA) {
             updateDialogForCdmaPhone();
         } else {
             updateDialogForGsmPhone();
@@ -122,13 +141,13 @@ public class ImeiInfoDialogController {
     }
 
     private SubscriptionInfo getSubscriptionInfo(Context context, int slotId) {
-        final List<SubscriptionInfo> subscriptionInfoList = SubscriptionManager.from(context)
-                .getActiveSubscriptionInfoList();
-        if (subscriptionInfoList == null) {
-            return null;
-        }
-
-        return subscriptionInfoList.get(slotId);
+        /// M: Get subscription info of the specified slotId. @{
+        SubscriptionInfo subInfo = SubscriptionManager.from(context)
+                .getActiveSubscriptionInfoForSimSlotIndex(slotId);
+        Log.d(TAG, "getSubscriptionInfo, slotId=" + slotId
+                + ", subInfo=" + (subInfo == null ? "null" : subInfo));
+        return subInfo;
+        /// @}
     }
 
     @VisibleForTesting

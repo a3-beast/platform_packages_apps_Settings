@@ -17,10 +17,15 @@
 package com.android.settings.users;
 
 import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.UserInfo;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.support.v14.preference.SwitchPreference;
@@ -72,6 +77,47 @@ public class UserDetailsSettings extends SettingsPreferenceFragment
         return MetricsEvent.USER_DETAILS;
     }
 
+    /// M: Add to block user quickly click deleting user icon to avoid JE. @{
+    /// For deleting user isn't synchrous with UI,
+    /// when user quickly click the delete icon while user removed broadcast received,
+    /// mRemovingUserId is reset to -1 and this will lead to Null pointer exception.
+    private ProgressDialog mDeletingUserDialog;
+    private static final int DELAY_MS = 500;
+    private Handler mHandler = new Handler();
+    // Check the user is removed complete
+    private Runnable mCheckDeleteComplete = new Runnable() {
+
+        @Override
+        public void run() {
+            if (!isResumed()) {
+                return;
+            } else {
+                if (mUserInfo != null && mUserManager != null) {
+                    UserInfo info = mUserManager.getUserInfo(mUserInfo.id);
+                    if (info == null) {
+                        dismissDialogAndFinish();
+                    } else if (!info.isEnabled()) {
+                        mHandler.postDelayed(this, DELAY_MS);
+                    }
+                } else {
+                    dismissDialogAndFinish();
+                }
+            }
+        }
+
+    };
+
+    private BroadcastReceiver mUserChangeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(Intent.ACTION_USER_REMOVED)) {
+                /// M: Dismiss delete user dialog when received user removed broadcast
+                dismissDialogAndFinish();
+            }
+        }
+    };
+    /// @}
+
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -109,6 +155,38 @@ public class UserDetailsSettings extends SettingsPreferenceFragment
             removePreference(KEY_REMOVE_USER);
         }
         mPhonePref.setOnPreferenceChangeListener(this);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        /// M: Register remove user listener and refresh status if need @{
+        IntentFilter filter = new IntentFilter(Intent.ACTION_USER_REMOVED);
+        getContext().registerReceiverAsUser(mUserChangeReceiver,
+                UserHandle.ALL, filter, null, null);
+        if (!mGuestUser) {
+            if (mUserInfo != null) {
+                UserInfo info = mUserManager.getUserInfo(mUserInfo.id);
+                if (info == null) {
+                    dismissDialogAndFinish();
+                } else if (!info.isEnabled()) {
+                    // Deleting, need re-show progress dialog and start to check delete complete
+                    // Maybe miss the remove complete broadcast
+                    showDeleteUserDialog();
+                    mHandler.postDelayed(mCheckDeleteComplete, DELAY_MS);
+                }
+            } else {
+                dismissDialogAndFinish();
+            }
+        }
+        /// @}
+    }
+
+    @Override
+    public void onPause() {
+        /// M: Unregister remove user listener
+        getActivity().unregisterReceiver(mUserChangeReceiver);
+        super.onPause();
     }
 
     @Override
@@ -208,7 +286,36 @@ public class UserDetailsSettings extends SettingsPreferenceFragment
     }
 
     void removeUser() {
+        /// M: Show dialog to block user from quickly delete multiple users
+        showDeleteUserDialog();
         mUserManager.removeUser(mUserInfo.id);
-        finishFragment();
+        /// M: Show dialog to wait delete user complete
+        // finishFragment();
     }
+
+    /// M: Show/dismiss delete user dialog @{
+    private void showDeleteUserDialog() {
+        if (mDeletingUserDialog == null) {
+            mDeletingUserDialog = new ProgressDialog(getActivity());
+            mDeletingUserDialog.setMessage(
+                    getResources().getString(R.string.master_clear_progress_text));
+            mDeletingUserDialog.setIndeterminate(true);
+            mDeletingUserDialog.setCancelable(false);
+        }
+        if (!mDeletingUserDialog.isShowing()) {
+            mDeletingUserDialog.show();
+        }
+    }
+
+    private void dismissDeleteUserDialog() {
+        if (mDeletingUserDialog != null && mDeletingUserDialog.isShowing()) {
+            mDeletingUserDialog.dismiss();
+        }
+    }
+
+    private void dismissDialogAndFinish() {
+        dismissDeleteUserDialog();
+        finish();
+    }
+    /// @}
 }

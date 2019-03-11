@@ -21,6 +21,8 @@ import android.content.Context;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.support.v7.preference.PreferenceViewHolder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,6 +36,7 @@ import android.widget.RadioButton;
 import com.android.settings.R;
 import com.android.settings.nfc.PaymentBackend.PaymentAppInfo;
 import com.android.settingslib.CustomDialogPreference;
+import com.mediatek.settings.FeatureOption;
 
 import java.util.List;
 
@@ -41,6 +44,7 @@ public class NfcPaymentPreference extends CustomDialogPreference implements
         PaymentBackend.Callback, View.OnClickListener {
 
     private static final String TAG = "NfcPaymentPreference";
+    private static final String ACTION_GSMA = "com.gsma.services.nfc.SELECT_DEFAULT_SERVICE";
 
     private final NfcPaymentAdapter mAdapter;
     private final Context mContext;
@@ -133,7 +137,7 @@ public class NfcPaymentPreference extends CustomDialogPreference implements
     }
 
     class NfcPaymentAdapter extends BaseAdapter implements CompoundButton.OnCheckedChangeListener,
-            View.OnClickListener {
+            View.OnClickListener, View.OnLongClickListener {
         // Only modified on UI thread
         private PaymentAppInfo[] appInfos;
 
@@ -179,6 +183,11 @@ public class NfcPaymentPreference extends CustomDialogPreference implements
             holder.imageView.setTag(appInfo);
             holder.imageView.setContentDescription(appInfo.label);
             holder.imageView.setOnClickListener(this);
+            /// M:ALPS03609694 Add for vendor TS26 request @{
+            if (FeatureOption.MTK_ST_NFC_GSMA_SUPPORT) {
+                holder.imageView.setOnLongClickListener(this);
+            }
+            /// @}
 
             // Prevent checked callback getting called on recycled views
             holder.radioButton.setOnCheckedChangeListener(null);
@@ -214,5 +223,34 @@ public class NfcPaymentPreference extends CustomDialogPreference implements
             if (dialog != null)
                 dialog.dismiss();
         }
+
+        /// M:ALPS03609694 Add for vendor TS26 request @{
+        @Override
+        public boolean onLongClick(View view) {
+            PaymentAppInfo appInfo = (PaymentAppInfo) view.getTag();
+            if (appInfo.componentName != null) {
+                Log.d(TAG, "onLongClick " + appInfo.componentName.toString());
+                Intent intent = new Intent(ACTION_GSMA);
+                intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+                List<ResolveInfo> apps = mContext.getPackageManager().queryIntentActivities(
+                        intent, PackageManager.MATCH_DEFAULT_ONLY);
+                if (apps != null && apps.size() != 0) {
+                    for (ResolveInfo app : apps) {
+                        String packageName = app.activityInfo.packageName;
+                        if (appInfo.componentName.getPackageName().equals(packageName)) {
+                            intent.setClassName(packageName, app.activityInfo.name);
+                            try {
+                                mContext.startActivity(intent);
+                            } catch (ActivityNotFoundException e) {
+                                Log.e(TAG, "Activity not found.");
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        /// @}
     }
 }

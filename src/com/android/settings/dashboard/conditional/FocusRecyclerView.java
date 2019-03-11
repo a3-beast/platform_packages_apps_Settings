@@ -26,6 +26,7 @@ import android.util.AttributeSet;
 public class FocusRecyclerView extends RecyclerView {
 
     private FocusListener mListener;
+    private DetachListener mDetachListener;
 
     public FocusRecyclerView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -46,4 +47,22 @@ public class FocusRecyclerView extends RecyclerView {
     public interface FocusListener {
         void onWindowFocusChanged(boolean hasWindowFocus);
     }
+
+    /// M: ALPS03866729 Remove conditionListener when detach. @{
+    @Override
+    public void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mDetachListener != null) {
+            mDetachListener.onDetachedFromWindow();
+        }
+    }
+
+    public void setDetachListener(DetachListener detachListener) {
+        mDetachListener = detachListener;
+    }
+
+    public interface DetachListener {
+        void onDetachedFromWindow();
+    }
+    /// @}
 }

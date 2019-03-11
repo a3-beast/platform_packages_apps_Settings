@@ -39,6 +39,8 @@ import static android.content.pm.PackageManager.GET_RESOLVED_FILTER;
 import static android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS;
 
 import com.android.settings.shortcut.CreateShortcut;
+import android.provider.Settings.System;
+import com.mediatek.provider.MtkSettingsExt;
 
 /**
  * Listens to {@link Intent.ACTION_PRE_BOOT_COMPLETED} and {@link Intent.ACTION_USER_INITIALIZED}
@@ -52,6 +54,8 @@ public class SettingsInitialize extends BroadcastReceiver {
             "com.android.settings.PRIMARY_PROFILE_CONTROLLED";
     private static final String SETTINGS_PACKAGE = "com.android.settings";
     private static final String WEBVIEW_IMPLEMENTATION_ACTIVITY = ".WebViewImplementation";
+    // M: Fix CR:ALPS04032656,wrongly connect 7th STA when the maximum connection settings is 6.
+    private static final int WIFI_HOTSPOT_DEFAULT_CLIENT_NUM = 6;
 
     @Override
     public void onReceive(Context context, Intent broadcast) {
@@ -61,6 +65,14 @@ public class SettingsInitialize extends BroadcastReceiver {
         managedProfileSetup(context, pm, broadcast, userInfo);
         webviewSettingSetup(context, pm, userInfo);
         refreshExistingShortcuts(context);
+        // M: Fix CR:ALPS04032656,wrongly connect 7th STA when the maximum connection settings is 6.
+        if (System.getInt(context.getContentResolver(),
+                MtkSettingsExt.System.WIFI_HOTSPOT_MAX_CLIENT_NUM,
+                -1) == -1) {
+            System.putInt(context.getContentResolver(),
+                    MtkSettingsExt.System.WIFI_HOTSPOT_MAX_CLIENT_NUM,
+                    WIFI_HOTSPOT_DEFAULT_CLIENT_NUM);
+        }
     }
 
     private void managedProfileSetup(Context context, final PackageManager pm, Intent broadcast,

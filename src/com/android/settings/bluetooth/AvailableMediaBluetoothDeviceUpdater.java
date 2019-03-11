@@ -35,7 +35,7 @@ public class AvailableMediaBluetoothDeviceUpdater extends BluetoothDeviceUpdater
 
     private static final String TAG = "AvailableMediaBluetoothDeviceUpdater";
     private static final boolean DBG = false;
-
+    private boolean mActivating = false;
     private final AudioManager mAudioManager;
 
     public AvailableMediaBluetoothDeviceUpdater(Context context, DashboardFragment fragment,
@@ -97,11 +97,6 @@ public class AvailableMediaBluetoothDeviceUpdater extends BluetoothDeviceUpdater
             if (DBG) {
                 Log.d(TAG, "isFilterMatched() current audio profile : " + currentAudioProfile);
             }
-            // If device is Hearing Aid, it is compatible with HFP and A2DP.
-            // It would show in Available Devices group.
-            if (cachedDevice.isConnectedHearingAidDevice()) {
-                return true;
-            }
             // According to the current audio profile type,
             // this page will show the bluetooth device that have corresponding profile.
             // For example:
@@ -125,10 +120,25 @@ public class AvailableMediaBluetoothDeviceUpdater extends BluetoothDeviceUpdater
     }
 
     @Override
+    public void onActiveDeviceChanged(CachedBluetoothDevice activeDevice, int bluetoothProfile) {
+        if (DBG) {
+            Log.d(TAG, "onActiveDeviceChanged() device: " +
+                    activeDevice.getName()  + ", bluetoothProfile: "
+                    + bluetoothProfile);
+        }
+        if(isFilterMatched(activeDevice)){
+            mActivating=false;
+        }
+    }
+    @Override
     public boolean onPreferenceClick(Preference preference) {
         final CachedBluetoothDevice device = ((BluetoothDevicePreference) preference)
                 .getBluetoothDevice();
-        return device.setActive();
+                if(!mActivating){
+                    mActivating=device.setActive();
+                    return mActivating;
+                }
+        return (!mActivating);
     }
 }
 

@@ -82,6 +82,14 @@
 
     </PreferenceCategory>
 
+
+    <!-- Add for Voice wakeup entrance -->
+    <Preference
+        android:key="voice_ui"
+        android:title="@string/voice_ui_title">
+        <intent android:action="com.mediatek.voicecommand.VOICE_CONTROL_SETTINGS" />
+    </Preference>
+
     <SwitchPreference
         android:key="vibrate_input_devices"
         android:title="@string/vibrate_input_devices"

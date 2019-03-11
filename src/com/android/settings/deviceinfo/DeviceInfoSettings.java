@@ -124,10 +124,13 @@ public class DeviceInfoSettings extends DashboardFragment implements Indexable {
     private static List<AbstractPreferenceController> buildPreferenceControllers(Context context,
             Activity activity, Fragment fragment, Lifecycle lifecycle) {
         final List<AbstractPreferenceController> controllers = new ArrayList<>();
-        controllers.add(new PhoneNumberPreferenceController(context));
-        controllers.add(new SimStatusPreferenceController(context, fragment));
+        /// M: Revise for updating phone number.
+        controllers.add(new PhoneNumberPreferenceController(context, lifecycle));
+        /// M: Revise for updating carrier name.
+        controllers.add(new SimStatusPreferenceController(context, fragment, lifecycle));
         controllers.add(new DeviceModelPreferenceController(context, fragment));
-        controllers.add(new ImeiInfoPreferenceController(context, fragment));
+        /// M: Revise for updating IMEI.
+        controllers.add(new ImeiInfoPreferenceController(context, fragment, lifecycle));
         controllers.add(new FirmwareVersionPreferenceController(context, fragment));
         controllers.add(new IpAddressPreferenceController(context, lifecycle));
         controllers.add(new WifiMacAddressPreferenceController(context, lifecycle));

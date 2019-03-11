@@ -45,6 +45,10 @@
             settings:keywords="@string/keywords_lockscreen" />
 
         <Preference
+            android:key="faceid"
+            android:title="@string/faceid_settings_title" />
+
+        <Preference
             android:key="lockscreen_preferences"
             android:title="@string/lockscreen_settings_title"
             android:summary="@string/summary_placeholder"
@@ -160,5 +164,27 @@
         android:title="@string/screen_pinning_title"
         android:summary="@string/summary_placeholder"
         android:fragment="com.android.settings.security.ScreenPinningSettings" />
+
+   <!--M: Add Data protection-->
+    <Preference
+        android:order="90"
+        android:key="data_protection_key"
+        android:title="@string/data_protection_title" >
+        <intent android:action="com.mediatek.dataprotection.ACTION_START_MAIN" />
+    </Preference>
+   <!--M: Add Auto Boot Management-->
+    <Preference
+        android:order="100"
+        android:key="auto_boot_management"
+        android:title="@string/auto_boot_pref_title" >
+        <intent android:action="com.mediatek.security.AUTO_BOOT" />
+    </Preference>
+       <!--M: Add Permission Request-->
+    <Preference
+        android:order="110"
+        android:key="permission_request"
+        android:title="@string/trigger_history_pref_title" >
+        <intent android:action="com.mediatek.security.TRIGGER_HISTORY" />
+    </Preference>
 
 </PreferenceScreen>

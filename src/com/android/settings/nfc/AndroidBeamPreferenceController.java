@@ -25,6 +25,8 @@ import com.android.settingslib.RestrictedPreference;
 import com.android.settingslib.core.lifecycle.LifecycleObserver;
 import com.android.settingslib.core.lifecycle.events.OnPause;
 import com.android.settingslib.core.lifecycle.events.OnResume;
+import com.mediatek.settings.FeatureOption;
+import android.util.Log;
 
 import java.util.List;
 
@@ -32,6 +34,11 @@ public class AndroidBeamPreferenceController extends BasePreferenceController
         implements LifecycleObserver, OnResume, OnPause {
 
     public static final String KEY_ANDROID_BEAM_SETTINGS = "android_beam_settings";
+
+    /// M: Add MTK nfc seting @{
+    private static final String KEY_MTK_TOGGLE_NFC = "toggle_mtk_nfc";
+    private static final String TAG = "NfcPreferenceController";
+
     private final NfcAdapter mNfcAdapter;
     private AndroidBeamEnabler mAndroidBeamEnabler;
     private NfcAirplaneModeObserver mAirplaneModeObserver;
@@ -45,6 +52,8 @@ public class AndroidBeamPreferenceController extends BasePreferenceController
     public void displayPreference(PreferenceScreen screen) {
         super.displayPreference(screen);
         if (!isAvailable()) {
+            /// M: Remove MTK NFC setting if NFC is unavailable
+            setVisible(screen, KEY_MTK_TOGGLE_NFC, false /* visible */);
             mAndroidBeamEnabler = null;
             return;
         }
@@ -52,7 +61,13 @@ public class AndroidBeamPreferenceController extends BasePreferenceController
         final RestrictedPreference restrictedPreference =
                 (RestrictedPreference) screen.findPreference(getPreferenceKey());
         mAndroidBeamEnabler = new AndroidBeamEnabler(mContext, restrictedPreference);
-
+        if (FeatureOption.MTK_NFC_ADDON_SUPPORT) {
+            Log.d(TAG, "MTK NFC support");
+            setVisible(screen, KEY_ANDROID_BEAM_SETTINGS, false /* visible */);
+        } else {
+            Log.d(TAG, "MTK NFC not support");
+            setVisible(screen, KEY_MTK_TOGGLE_NFC, false /* visible */);
+        }
         // Manually set dependencies for NFC when not toggleable.
         if (!NfcPreferenceController.isToggleableInAirplaneMode(mContext)) {
             mAirplaneModeObserver = new NfcAirplaneModeObserver(mContext, mNfcAdapter,
@@ -85,6 +100,17 @@ public class AndroidBeamPreferenceController extends BasePreferenceController
         }
         if (mAndroidBeamEnabler != null) {
             mAndroidBeamEnabler.pause();
+        }
+    }
+
+    @Override
+    public void updateNonIndexableKeys(List<String> keys) {
+        if (isAvailable()) {
+            if (FeatureOption.MTK_NFC_ADDON_SUPPORT) {
+                keys.add(getPreferenceKey());
+            } else {
+                keys.add(KEY_MTK_TOGGLE_NFC);
+            }
         }
     }
 }

@@ -42,6 +42,7 @@ import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settings.widget.PreferenceCategoryController;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.mediatek.settings.inputmethod.VoiceWakeupPreferenceController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,6 +123,9 @@ public class LanguageAndInputSettings extends DashboardFragment {
         controllers.add(new SpellCheckerPreferenceController(context));
         controllers.add(new DefaultAutofillPreferenceController(context));
         controllers.add(new UserDictionaryPreferenceController(context));
+        /// M: Add for Voice wakeup entrance @{
+        controllers.add(new VoiceWakeupPreferenceController(context));
+        /// @}
 
         return controllers;
     }

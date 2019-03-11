@@ -31,9 +31,13 @@ import com.android.internal.logging.nano.MetricsProto;
 import com.android.settings.R;
 import com.android.settings.core.instrumentation.InstrumentedDialogFragment;
 
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IDeviceInfoSettingsExt;
+
 public class HardwareInfoDialogFragment extends InstrumentedDialogFragment {
 
     public static final String TAG = "HardwareInfo";
+    private IDeviceInfoSettingsExt mExt;
 
     @Override
     public int getMetricsCategory() {
@@ -47,14 +51,17 @@ public class HardwareInfoDialogFragment extends InstrumentedDialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        mExt = UtilsExt.getDeviceInfoSettingsExt(getActivity());
         final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.hardware_info)
                 .setPositiveButton(android.R.string.ok, null);
         final View content = LayoutInflater.from(builder.getContext())
                 .inflate(R.layout.dialog_hardware_info, null /* parent */);
         // Model
+        ///M: for operator customize device model. @{
         setText(content, R.id.model_label, R.id.model_value,
-                DeviceModelPreferenceController.getDeviceModel());
+                mExt.customeModelInfo(DeviceModelPreferenceController.getDeviceModel()));
+        /// @}
 
         // Serial number
         setText(content, R.id.serial_number_label, R.id.serial_number_value, getSerialNumber());

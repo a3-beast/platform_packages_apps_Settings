@@ -33,6 +33,7 @@ import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settings.R;
 import com.android.settingslib.bluetooth.CachedBluetoothDevice;
 import com.android.settingslib.core.AbstractPreferenceController;
+import com.android.settings.ProgressCategory;
 
 import java.util.List;
 
@@ -51,6 +52,8 @@ public final class DevicePickerFragment extends DeviceListPreferenceFragment {
     private String mLaunchPackage;
     private String mLaunchClass;
     private boolean mScanAllowed;
+
+    private ProgressCategory mProgressCategory;
 
     public DevicePickerFragment() {
         super(null /* Not tied to any user restrictions. */);
@@ -84,11 +87,16 @@ public final class DevicePickerFragment extends DeviceListPreferenceFragment {
         UserManager um = (UserManager) getSystemService(Context.USER_SERVICE);
         mScanAllowed = !um.hasUserRestriction(DISALLOW_CONFIG_BLUETOOTH);
         setHasOptionsMenu(true);
+
+        mProgressCategory = (ProgressCategory) findPreference(KEY_BT_DEVICE_LIST);
     }
 
     @Override
     public void onStart() {
         super.onStart();
+        ///M: before add device pref, firstly clear the screen
+        mProgressCategory.setNoDeviceFoundAdded(false);
+        removeAllDevices();
         addCachedDevices();
         mSelectedDevice = null;
         if (mScanAllowed) {
@@ -113,6 +121,12 @@ public final class DevicePickerFragment extends DeviceListPreferenceFragment {
         if (mSelectedDevice == null) {
             sendDevicePickedIntent(null);
         }
+
+        ///M: remove the preference, so that it will unregister the callback @{
+        if (mProgressCategory != null) {
+            mProgressCategory.removeAll();
+        }
+        /// @}
     }
 
     @Override

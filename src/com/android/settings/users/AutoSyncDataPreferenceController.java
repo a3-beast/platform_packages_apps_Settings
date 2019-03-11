@@ -98,6 +98,9 @@ public class AutoSyncDataPreferenceController extends AbstractPreferenceControll
             DialogInterface.OnClickListener {
         private static final String SAVE_ENABLING = "enabling";
         private static final String SAVE_USER_HANDLE = "userHandle";
+        /// M: Save user identifier instance state
+        private static final String SAVE_IDENTIFIER = "identifier";
+        int mIdentifier;
         boolean mEnabling;
         UserHandle mUserHandle;
         SwitchPreference mPreference;
@@ -109,6 +112,7 @@ public class AutoSyncDataPreferenceController extends AbstractPreferenceControll
             final ConfirmAutoSyncChangeFragment dialog = new ConfirmAutoSyncChangeFragment();
             dialog.mEnabling = enabling;
             dialog.mUserHandle = userHandle;
+            dialog.mIdentifier = userHandle.getIdentifier();
             dialog.setTargetFragment(parent, 0);
             dialog.mPreference = preference;
             dialog.show(parent.getFragmentManager(), TAG_CONFIRM_AUTO_SYNC_CHANGE);
@@ -120,6 +124,7 @@ public class AutoSyncDataPreferenceController extends AbstractPreferenceControll
             if (savedInstanceState != null) {
                 mEnabling = savedInstanceState.getBoolean(SAVE_ENABLING);
                 mUserHandle = (UserHandle) savedInstanceState.getParcelable(SAVE_USER_HANDLE);
+                mIdentifier = savedInstanceState.getInt(SAVE_IDENTIFIER);
             }
 
             final AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -142,6 +147,7 @@ public class AutoSyncDataPreferenceController extends AbstractPreferenceControll
             super.onSaveInstanceState(outState);
             outState.putBoolean(SAVE_ENABLING, mEnabling);
             outState.putParcelable(SAVE_USER_HANDLE, mUserHandle);
+            outState.putInt(SAVE_IDENTIFIER, mIdentifier);
         }
 
         @Override
@@ -153,7 +159,7 @@ public class AutoSyncDataPreferenceController extends AbstractPreferenceControll
         public void onClick(DialogInterface dialog, int which) {
             if (which == DialogInterface.BUTTON_POSITIVE) {
                 ContentResolver.setMasterSyncAutomaticallyAsUser(mEnabling,
-                        mUserHandle.getIdentifier());
+                        mIdentifier);
                 if (mPreference != null) {
                     mPreference.setChecked(mEnabling);
                 }

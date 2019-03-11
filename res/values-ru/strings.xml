@@ -129,8 +129,8 @@
     <string name="bluetooth_device" msgid="5291950341750186887">"Bluetooth-устройство без названия"</string>
     <string name="progress_scanning" msgid="192587958424295789">"Поиск"</string>
     <string name="bluetooth_no_devices_found" msgid="1085232930277181436">"Устройства Bluetooth не найдены."</string>
-    <string name="bluetooth_notif_ticker" msgid="4726721390078512173">"Запрос подключения Bluetooth"</string>
-    <string name="bluetooth_notif_title" msgid="2485175521845371514">"Запрос подключения"</string>
+    <string name="bluetooth_notif_ticker" msgid="4726721390078512173">"Запрос сопряжения Bluetooth"</string>
+    <string name="bluetooth_notif_title" msgid="2485175521845371514">"Запрос на сопряжение"</string>
     <string name="bluetooth_notif_message" msgid="5057417127600942904">"Нажмите, чтобы установить соединение с устройством \"<xliff:g id="DEVICE_NAME">%1$s</xliff:g>\"."</string>
     <string name="bluetooth_show_received_files" msgid="3144149432555230410">"Полученные файлы"</string>
     <string name="device_picker" msgid="4978696506172252813">"Выбрать устройство Bluetooth"</string>
@@ -684,7 +684,7 @@
     <string name="bluetooth_settings_title" msgid="1908745291161353016">"Bluetooth"</string>
     <string name="bluetooth_settings_summary" msgid="2091062709530570462">"Настройка подключений, видимости и имени устройства"</string>
     <string name="bluetooth_pairing_request" msgid="2605098826364694673">"Добавить <xliff:g id="DEVICE_NAME">%1$s</xliff:g>?"</string>
-    <string name="bluetooth_pairing_key_msg" msgid="418124944140102021">"Код подключения Bluetooth"</string>
+    <string name="bluetooth_pairing_key_msg" msgid="418124944140102021">"Код сопряжения Bluetooth"</string>
     <string name="bluetooth_enter_passkey_msg" msgid="6813273136442138444">"Введите код подключения и нажмите клавишу ввода"</string>
     <string name="bluetooth_enable_alphanumeric_pin" msgid="7222713483058171357">"PIN-код содержит буквы или символы"</string>
     <string name="bluetooth_pin_values_hint" msgid="3815897557875873646">"Обычно 0000 или 1234"</string>
@@ -715,9 +715,9 @@
     <string name="bluetooth_preference_no_found_devices" msgid="7594339669961811591">"Нет доступных устройств"</string>
     <string name="bluetooth_device_context_connect" msgid="3997659895003244941">"Подключить"</string>
     <string name="bluetooth_device_context_disconnect" msgid="8220072022970148683">"Отключить"</string>
-    <string name="bluetooth_device_context_pair_connect" msgid="7611522504813927727">"Установить соединение и подключить"</string>
-    <string name="bluetooth_device_context_unpair" msgid="662992425948536144">"Отключить"</string>
-    <string name="bluetooth_device_context_disconnect_unpair" msgid="7644014238070043798">"Отключить и отменить соединение"</string>
+    <string name="bluetooth_device_context_pair_connect" msgid="7611522504813927727">"Выполнить сопряжение и подключить"</string>
+    <string name="bluetooth_device_context_unpair" msgid="662992425948536144">"Отменить сопряжение"</string>
+    <string name="bluetooth_device_context_disconnect_unpair" msgid="7644014238070043798">"Отключить и отменить сопряжение"</string>
     <string name="bluetooth_device_context_connect_advanced" msgid="2643129703569788771">"Параметры..."</string>
     <string name="bluetooth_menu_advanced" msgid="8572178316357220524">"Дополнительно"</string>
     <string name="bluetooth_advanced_titlebar" msgid="2142159726881547669">"Расш. настройки Bluetooth"</string>
@@ -878,7 +878,6 @@
     <string name="wifi_ap_choose_auto" msgid="2677800651271769965">"Авто"</string>
     <string name="wifi_ap_choose_2G" msgid="8724267386885036210">"2,4 ГГц"</string>
     <string name="wifi_ap_choose_5G" msgid="8813128641914385634">"5,0 ГГц"</string>
-    <string name="wifi_ap_prefer_5G" msgid="2501070491623803139">"5,0 ГГц (рекомендуется)"</string>
     <string name="wifi_ap_2G" msgid="8378132945192979364">"2,4 ГГц"</string>
     <string name="wifi_ap_5G" msgid="4020713496716329468">"5,0 ГГц"</string>
     <string name="wifi_ap_band_select_one" msgid="3476254666116431650">"Выберите хотя бы один диапазон частот для точек доступа Wi-Fi."</string>
@@ -1092,7 +1091,7 @@
     <string name="color_mode_option_natural" msgid="5013837483986772758">"Натуральные"</string>
     <string name="color_mode_option_boosted" msgid="8588223970257287524">"Яркие"</string>
     <string name="color_mode_option_saturated" msgid="4569683960058798843">"Насыщенные"</string>
-    <string name="color_mode_option_automatic" msgid="7996505473528529568">"Адаптивная регулировка"</string>
+    <string name="color_mode_option_automatic" msgid="8781254568140509331">"Автоматически"</string>
     <string name="color_mode_summary_natural" msgid="6624188642920403099">"Только натуральные цвета"</string>
     <string name="color_mode_summary_automatic" msgid="4669516973360709431">"Среднее между насыщенными и натуральными цветами"</string>
     <string name="accelerometer_summary_on" product="tablet" msgid="429982132339828942">"Автоматически изменять ориентацию экрана при повороте планшетного ПК"</string>
@@ -1123,8 +1122,8 @@
     <string name="auto_brightness_description" msgid="7310335517128283729">"Яркость экрана будет автоматически регулироваться в зависимости от окружающих условий и ваших действий. Вы можете вручную перемещать ползунок, чтобы помочь адаптивной яркости запомнить ваши предпочтения."</string>
     <string name="night_display_title" msgid="2626451512200357686">"Ночной режим"</string>
     <string name="night_display_text" msgid="1837277457033025056">"В ночном режиме экран приобретает желтоватый оттенок. Это снижает напряжение глаз при тусклом свете и может помочь вам быстрее заснуть."</string>
-    <string name="night_display_auto_mode_title" msgid="6574111412154833409">"Расписание"</string>
-    <string name="night_display_auto_mode_never" msgid="2483761922928753400">"Нет"</string>
+    <string name="night_display_auto_mode_title" msgid="6574111412154833409">"По расписанию"</string>
+    <string name="night_display_auto_mode_never" msgid="2483761922928753400">"Никогда"</string>
     <string name="night_display_auto_mode_custom" msgid="2379394568898721765">"В выбранное время"</string>
     <string name="night_display_auto_mode_twilight" msgid="589042813708244059">"От заката до рассвета"</string>
     <string name="night_display_start_time_title" msgid="8918016772613689584">"Время включения"</string>
@@ -1141,7 +1140,7 @@
     <string name="night_display_summary_on_auto_mode_twilight" msgid="852270120144683507">"Выключится автоматически на рассвете"</string>
     <string name="night_display_activation_on_manual" msgid="277343561277625826">"Включить"</string>
     <string name="night_display_activation_off_manual" msgid="4074557720918572883">"Отключить"</string>
-    <string name="night_display_activation_on_twilight" msgid="6976051971534953845">"Включить до рассвета"</string>
+    <string name="night_display_activation_on_twilight" msgid="6976051971534953845">"Включить до восхода"</string>
     <string name="night_display_activation_off_twilight" msgid="7196227685059907233">"Отключить до заката"</string>
     <string name="night_display_activation_on_custom" msgid="5472029024427933598">"Включить до <xliff:g id="ID_1">%1$s</xliff:g>"</string>
     <string name="night_display_activation_off_custom" msgid="6169984658293744715">"Отключить до <xliff:g id="ID_1">%1$s</xliff:g>"</string>
@@ -2006,7 +2005,7 @@
     <string name="accessibility_hearingaid_not_connected_summary" msgid="6240237523789614599">"Нет подключенных слуховых аппаратов"</string>
     <string name="accessibility_hearingaid_adding_summary" msgid="6371077608778830020">"Добавить слуховой аппарат"</string>
     <string name="accessibility_hearingaid_pair_instructions_first_message" msgid="3912093691643131154">"Чтобы подключить слуховой аппарат, коснитесь его названия на следующем экране."</string>
-    <string name="accessibility_hearingaid_pair_instructions_second_message" msgid="5596683393607650243">"Убедитесь, что ваш слуховой аппарат находится в режиме установления соединения."</string>
+    <string name="accessibility_hearingaid_pair_instructions_second_message" msgid="5596683393607650243">"Убедитесь, что ваш слуховой аппарат находится в режиме сопряжения."</string>
     <string name="accessibility_hearingaid_active_device_summary" msgid="1246354030808703545">"Слуховой аппарат \"<xliff:g id="DEVICE_NAME">%1$s</xliff:g>\" активен"</string>
     <plurals name="show_number_hearingaid_count" formatted="false" msgid="3160782397139295486">
       <item quantity="one"><xliff:g id="NUMBER_DEVICE_COUNT_1">%1$d</xliff:g> сохраненный слуховой аппарат</item>
@@ -2496,7 +2495,7 @@
     <string name="credentials_enabled" msgid="7588607413349978930">"Хранилище регистрационных данных включено."</string>
     <string name="credentials_configure_lock_screen_hint" msgid="8058230497337529036">"Чтобы использовать хранилище учетных данных, необходимо сначала настроить блокировку экрана на устройстве."</string>
     <string name="credentials_configure_lock_screen_button" msgid="253239765216055321">"НАСТРОИТЬ БЛОКИРОВКУ"</string>
-    <string name="usage_access_title" msgid="332333405495457839">"Доступ к данным"</string>
+    <string name="usage_access_title" msgid="332333405495457839">"Приложения с доступом к данным"</string>
     <string name="emergency_tone_title" msgid="254495218194925271">"Сигнал набора номера при экстренных вызовах"</string>
     <string name="emergency_tone_summary" msgid="722259232924572153">"Настроить режим работы при экстренном вызове"</string>
     <string name="privacy_settings_title" msgid="2978878794187459190">"Резервное копирование"</string>
@@ -2833,7 +2832,7 @@
       <item quantity="many">Проверить сертификаты</item>
       <item quantity="other">Проверить сертификаты</item>
     </plurals>
-    <string name="user_settings_title" msgid="3493908927709169019">"Пользователи"</string>
+    <string name="user_settings_title" msgid="3493908927709169019">"Несколько пользователей"</string>
     <string name="user_list_title" msgid="7937158411137563543">"Пользователи и профили"</string>
     <string name="user_add_user_or_profile_menu" msgid="6923838875175259418">"Добавить пользователя или профиль"</string>
     <string name="user_add_user_menu" msgid="1675956975014862382">"Добавить пользователя"</string>
@@ -3110,7 +3109,7 @@
     <string name="sound_settings_summary_silent" msgid="5074529767435584948">"Включен режим без звука"</string>
     <string name="sound_settings_example_summary" msgid="2404914514266523165">"Громкость звонка: 80%"</string>
     <string name="media_volume_option_title" msgid="2811531786073003825">"Музыка, видео, игры"</string>
-    <string name="call_volume_option_title" msgid="1265865226974255384">"Разговор"</string>
+    <string name="call_volume_option_title" msgid="1265865226974255384">"Громкость вызова"</string>
     <string name="alarm_volume_option_title" msgid="8219324421222242421">"Будильник"</string>
     <string name="ring_volume_option_title" msgid="6767101703671248309">"Рингтон"</string>
     <string name="notification_volume_option_title" msgid="6064656124416882130">"Громкость уведомлений"</string>
@@ -3123,7 +3122,7 @@
     <string name="other_sound_settings" msgid="3151004537006844718">"Другие звуки"</string>
     <string name="dial_pad_tones_title" msgid="1999293510400911558">"Звук при наборе номера"</string>
     <string name="screen_locking_sounds_title" msgid="1340569241625989837">"Звук блокировки экрана"</string>
-    <string name="charging_sounds_title" msgid="1132272552057504251">"Сигналы зарядки"</string>
+    <string name="charging_sounds_title" msgid="1132272552057504251">"Сигналы состояния батареи"</string>
     <string name="docking_sounds_title" msgid="155236288949940607">"Звуки через док-динамик"</string>
     <string name="touch_sounds_title" msgid="5326587106892390176">"Звук нажатия на экран"</string>
     <string name="vibrate_on_touch_title" msgid="1510405818894719079">"Вибрация при касании"</string>
@@ -3238,7 +3237,7 @@
     <string name="zen_sound_two_allowed" msgid="980491120444358550">"Без звука, кроме: <xliff:g id="SOUND_TYPE_0">%1$s</xliff:g> и <xliff:g id="SOUND_TYPE_1">%2$s</xliff:g>"</string>
     <string name="zen_sound_three_allowed" msgid="3455767205934547985">"Без звука, кроме: <xliff:g id="SOUND_TYPE_0">%1$s</xliff:g>, <xliff:g id="SOUND_TYPE_1">%2$s</xliff:g> и <xliff:g id="SOUND_TYPE_2">%3$s</xliff:g>"</string>
     <string name="zen_msg_event_reminder_title" msgid="5137894077488924820">"Сообщения, напоминания и уведомления о мероприятиях"</string>
-    <string name="zen_msg_event_reminder_footer" msgid="4376930591019535192">"В режиме \"Не беспокоить\" сообщения, напоминания и уведомления о мероприятиях будут приходить без звука (за исключением тех, для которых вы задали разрешения выше). Вы можете изменить настройки, чтобы сообщения от членов семьи, друзей и других контактов приходили со звуком."</string>
+    <string name="zen_msg_event_reminder_footer" msgid="3242847055412790819">"В режиме \"Не беспокоить\" сообщения, напоминания и уведомления о мероприятиях будут приходить без звука, за исключением тех, для которых вы задали разрешения выше. Вы можете изменить настройки, чтобы сообщения от друзей, членов семьи и других контактов приходили со звуком."</string>
     <string name="zen_onboarding_ok" msgid="6131211000824433013">"ОК"</string>
     <string name="zen_onboarding_settings" msgid="9046451821239946868">"Настройки"</string>
     <string name="zen_onboarding_new_setting_title" msgid="1893095176110470711">"Полностью отключить уведомления"</string>
@@ -3455,7 +3454,7 @@
     <string name="zen_mode_repeat_callers" msgid="5019521886428322131">"Повторные вызовы"</string>
     <string name="zen_mode_repeat_callers_title" msgid="8553876328249671783">"Повторные вызовы"</string>
     <string name="zen_mode_calls_summary_one" msgid="3972333792749874863">"От кого: <xliff:g id="CALLER_TYPE">%1$s</xliff:g>"</string>
-    <string name="zen_mode_calls_summary_two" msgid="6592821501321201329">"Только <xliff:g id="CALLER_TYPE">%1$s</xliff:g> и <xliff:g id="CALLERT_TPYE">%2$s</xliff:g>"</string>
+    <string name="zen_mode_calls_summary_two" msgid="6592821501321201329">"Вызовы только от этих пользователей: <xliff:g id="CALLER_TYPE">%1$s</xliff:g> и <xliff:g id="CALLERT_TPYE">%2$s</xliff:g>"</string>
     <string name="zen_mode_repeat_callers_summary" msgid="239685342222975733">"Если абонент звонит повторно в течение <xliff:g id="MINUTES">%d</xliff:g> мин."</string>
     <string name="zen_mode_behavior_summary_custom" msgid="168127313238020146">"Пользовательские"</string>
     <string name="zen_mode_when" msgid="2767193283311106373">"Включать автоматически"</string>
@@ -3691,7 +3690,7 @@
     <string name="usb_default_info" msgid="8864535445796200695">"Эти настройки будут применяться, когда ваш телефон разблокирован и к нему подключено другое устройство. Устанавливайте соединения только с надежными устройствами."</string>
     <string name="usb_pref" msgid="1400617804525116158">"USB"</string>
     <string name="usb_preference" msgid="7394265019817945275">"Настройки USB"</string>
-    <string name="usb_control_title" msgid="4404322722995917160">"Устройство, управляющее USB"</string>
+    <string name="usb_control_title" msgid="4404322722995917160">"Ведущее устройство USB"</string>
     <string name="usb_control_host" msgid="2276710819046647200">"Подключенное устройство"</string>
     <string name="usb_control_device" msgid="5821511964163469463">"Это устройство"</string>
     <string name="usb_switching" msgid="8995313698715545619">"Подождите…"</string>
@@ -4005,9 +4004,9 @@
     <string name="notification_log_details_none" msgid="184131801230614059">"нет"</string>
     <string name="notification_log_details_ranking_null" msgid="244660392058720919">"Объект отсутствует."</string>
     <string name="notification_log_details_ranking_none" msgid="599607025882587844">"В объекте нет этого ключа."</string>
-    <string name="display_cutout_emulation" msgid="7466869822418376317">"Вырез на экране"</string>
+    <string name="display_cutout_emulation" msgid="6306593933746393170">"Эмуляция экрана с вырезом"</string>
     <string name="display_cutout_emulation_keywords" msgid="4495418317471622562">"вырез на экране, выемка"</string>
-    <string name="display_cutout_emulation_device_default" msgid="7957250558326167503">"Вариант по умолчанию"</string>
+    <string name="display_cutout_emulation_none" msgid="5144174674654097316">"Нет"</string>
     <string name="special_access" msgid="3458780842491881155">"Специальный доступ"</string>
     <plurals name="special_access_summary" formatted="false" msgid="260765309935675867">
       <item quantity="one"><xliff:g id="COUNT">%d</xliff:g> приложение без ограничений мобильного Интернета</item>

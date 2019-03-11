@@ -74,6 +74,8 @@ import com.android.settingslib.drawer.DashboardCategory;
 import com.android.settingslib.drawer.SettingsDrawerActivity;
 import com.android.settingslib.utils.ThreadUtils;
 
+import com.mediatek.settings.UtilsExt;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -233,6 +235,13 @@ public class SettingsActivity extends SettingsDrawerActivity
     @Override
     protected void onCreate(Bundle savedState) {
         super.onCreate(savedState);
+        /// M: ALPS02994518 If start by monkey, finish @ {
+        if (!isFinishing() && Utils.isMonkeyRunning()) {
+            Log.d(LOG_TAG, "finish due to monkey user");
+            finish();
+            return;
+        }
+        /// @ }
         Log.d(LOG_TAG, "Starting onCreate");
         long startTime = System.currentTimeMillis();
 
@@ -711,6 +720,9 @@ public class SettingsActivity extends SettingsDrawerActivity
                         Settings.WifiDisplaySettingsActivity.class.getName()),
                 WifiDisplaySettings.isAvailable(this), isAdmin)
                 || somethingChanged;
+        /// M: Give plugin a chance to update tiles list
+        somethingChanged = UtilsExt.getMiscPlugin(this)
+                                .doUpdateTilesList(this, isAdmin, somethingChanged);
 
         // Enable/disable the Me Card page.
         final boolean aboutPhoneV2Enabled = featureFactory

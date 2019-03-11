@@ -23,6 +23,9 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.Fragment;
 import android.content.Context;
+/// M: Add for handling activity result.
+import android.content.Intent;
+import android.os.Bundle;
 import android.provider.SearchIndexableResource;
 import android.support.annotation.VisibleForTesting;
 import android.text.BidiFormatter;
@@ -38,6 +41,9 @@ import com.android.settings.wifi.WifiMasterSwitchPreferenceController;
 import com.android.settingslib.core.AbstractPreferenceController;
 import com.android.settingslib.core.instrumentation.MetricsFeatureProvider;
 import com.android.settingslib.core.lifecycle.Lifecycle;
+import com.mediatek.settings.UtilsExt;
+import com.mediatek.settings.ext.IRCSSettings;
+import com.mediatek.settings.network.RcsePreferenceController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +76,15 @@ public class NetworkDashboardFragment extends DashboardFragment implements
         use(AirplaneModePreferenceController.class).setFragment(this);
     }
 
+    /// M: add the entrance RCS switch. @{
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        IRCSSettings rcsExt = UtilsExt.getRCSSettingsExt(getActivity());
+        rcsExt.addRCSPreference(getActivity(), getPreferenceScreen());
+    }
+    /// @}
+
     @Override
     public int getHelpResource() {
         return R.string.help_url_network_dashboard;
@@ -94,7 +109,11 @@ public class NetworkDashboardFragment extends DashboardFragment implements
         final VpnPreferenceController vpnPreferenceController =
                 new VpnPreferenceController(context);
         final PrivateDnsPreferenceController privateDnsPreferenceController =
-                new PrivateDnsPreferenceController(context);
+            new PrivateDnsPreferenceController(context);
+        /// M: add the RCSE feature @{
+        final RcsePreferenceController rcsePreferenceController =
+                new RcsePreferenceController(context);
+        /// @}
 
         if (lifecycle != null) {
             lifecycle.addObserver(mobilePlanPreferenceController);
@@ -102,6 +121,9 @@ public class NetworkDashboardFragment extends DashboardFragment implements
             lifecycle.addObserver(mobileNetworkPreferenceController);
             lifecycle.addObserver(vpnPreferenceController);
             lifecycle.addObserver(privateDnsPreferenceController);
+            /// M: add the RCSE feature @{
+            lifecycle.addObserver(rcsePreferenceController);
+            /// @}
         }
 
         final List<AbstractPreferenceController> controllers = new ArrayList<>();
@@ -112,6 +134,9 @@ public class NetworkDashboardFragment extends DashboardFragment implements
         controllers.add(mobilePlanPreferenceController);
         controllers.add(wifiPreferenceController);
         controllers.add(privateDnsPreferenceController);
+        /// M: add the RCSE feature @{
+        controllers.add(rcsePreferenceController);
+        /// @}
         return controllers;
     }
 
@@ -232,4 +257,16 @@ public class NetworkDashboardFragment extends DashboardFragment implements
                     return keys;
                 }
             };
+
+    /// M: Add for handling activity result. @{
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        AirplaneModePreferenceController airplaneModePreferenceController =
+                use(AirplaneModePreferenceController.class);
+        if (airplaneModePreferenceController.onActivityResult(requestCode, resultCode, data)) {
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+    /// @}
 }

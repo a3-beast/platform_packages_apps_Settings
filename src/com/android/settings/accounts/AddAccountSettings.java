@@ -88,6 +88,9 @@ public class AddAccountSettings extends Activity {
     private final AccountManagerCallback<Bundle> mCallback = new AccountManagerCallback<Bundle>() {
         @Override
         public void run(AccountManagerFuture<Bundle> future) {
+            /// M: Workaround for callback not called when cancel permission preview
+            Log.v(TAG, "callback called");
+            mAddAccountCallbackCalled = true;
             boolean done = true;
             try {
                 Bundle bundle = future.getResult();
@@ -127,6 +130,10 @@ public class AddAccountSettings extends Activity {
     };
 
     private boolean mAddAccountCalled = false;
+    /// M: Workaround for callback not called when cancel permission preview @{
+    private boolean mAddAccountCallbackCalled = false;
+    private boolean mPreventEmptyActivity = false;
+    /// M: @}
     private UserHandle mUserHandle;
 
     @Override
@@ -170,6 +177,28 @@ public class AddAccountSettings extends Activity {
                 requestChooseAccount();
             }
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        /// M: Workaround for callback not called when cancel permission preview @{
+        if (mAddAccountCalled && !mAddAccountCallbackCalled && mPreventEmptyActivity) {
+            Log.v(TAG, "finish empty activity");
+            finish();
+        }
+        /// M: @}
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        /// M: Workaround for callback not called when cancel permission preview @{
+        if (mAddAccountCalled && !mAddAccountCallbackCalled && !mPreventEmptyActivity) {
+            Log.v(TAG, "prepare to prevent empty activity");
+            mPreventEmptyActivity = true;
+        }
+        /// M: @}
     }
 
     @Override

@@ -62,6 +62,7 @@ import com.android.settings.fingerprint.FingerprintEnrollFindSensor;
 import com.android.settingslib.RestrictedLockUtils;
 import com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 import com.android.settingslib.RestrictedPreference;
+import com.mediatek.faceid.FaceIdHelper;
 
 import java.util.List;
 
@@ -106,6 +107,7 @@ public class ChooseLockGeneric extends SettingsActivity {
         public static final String ENCRYPT_REQUESTED_QUALITY = "encrypt_requested_quality";
         public static final String ENCRYPT_REQUESTED_DISABLED = "encrypt_requested_disabled";
         public static final String TAG_FRP_WARNING_DIALOG = "frp_warning_dialog";
+        private FaceIdHelper mFaceIdHelper;
 
         /**
          * Boolean extra determining whether a "screen lock options" button should be shown. This
@@ -155,6 +157,7 @@ public class ChooseLockGeneric extends SettingsActivity {
         private ChooseLockGenericController mController;
 
         protected boolean mForFingerprint = false;
+        protected boolean mForFaceid = false;
 
         @Override
         public int getMetricsCategory() {
@@ -195,6 +198,11 @@ public class ChooseLockGeneric extends SettingsActivity {
                     ChooseLockSettingsHelper.EXTRA_KEY_CHALLENGE, 0);
             mForFingerprint = getActivity().getIntent().getBooleanExtra(
                     ChooseLockSettingsHelper.EXTRA_KEY_FOR_FINGERPRINT, false);
+            mFaceIdHelper = new FaceIdHelper(getContext());
+            if (FaceIdHelper.isFaceIdFeatureEnabled()) {
+                mForFaceid = getActivity().getIntent().getBooleanExtra(mFaceIdHelper.KEY_FOR_FACEID, false);
+            }
+            Log.d("faceid", "mForFaceid = " + mForFaceid + ", intent = " + getActivity().getIntent());
             mForChangeCredRequiredForBoot = getArguments() != null && getArguments().getBoolean(
                     ChooseLockSettingsHelper.EXTRA_KEY_FOR_CHANGE_CRED_REQUIRED_FOR_BOOT);
             mUserManager = UserManager.get(getActivity());
@@ -266,12 +274,15 @@ public class ChooseLockGeneric extends SettingsActivity {
                             .setText(R.string.fingerprint_unlock_title);
                 }
             }
+            if (mForFaceid) {
+                setHeaderView(R.layout.choose_lock_generic_faceid_header);
+            }
         }
 
         @Override
         public boolean onPreferenceTreeClick(Preference preference) {
             final String key = preference.getKey();
-
+            Log.d("faceid", "onPreferenceTreeClick key=" + key);
             if (!isUnlockMethodSecure(key) && mLockPatternUtils.isSecure(mUserId)) {
                 // Show the disabling FRP warning only when the user is switching from a secure
                 // unlock method to an insecure one
@@ -291,6 +302,7 @@ public class ChooseLockGeneric extends SettingsActivity {
                 startActivityForResult(chooseLockGenericIntent, SKIP_FINGERPRINT_REQUEST);
                 return true;
             } else {
+                Log.d("faceid", "onPreferenceTreeClick setUnlockMethod");
                 return setUnlockMethod(key);
             }
         }
@@ -421,6 +433,7 @@ public class ChooseLockGeneric extends SettingsActivity {
         private void updatePreferencesOrFinish(boolean isRecreatingActivity) {
             Intent intent = getActivity().getIntent();
             int quality = intent.getIntExtra(LockPatternUtils.PASSWORD_TYPE_KEY, -1);
+            Log.d("faceid", "quality = " + quality);
             if (quality == -1) {
                 // If caller didn't specify password quality, show UI and allow the user to choose.
                 quality = intent.getIntExtra(MINIMUM_QUALITY_KEY, -1);
@@ -432,6 +445,7 @@ public class ChooseLockGeneric extends SettingsActivity {
                     prefScreen.removeAll();
                 }
                 addPreferences();
+                removePreferencesForFaceid();
                 disableUnusablePreferences(quality, hideDisabledPrefs);
                 updatePreferenceText();
                 updateCurrentPreference();
@@ -450,6 +464,14 @@ public class ChooseLockGeneric extends SettingsActivity {
             findPreference(KEY_SKIP_FINGERPRINT).setViewId(R.id.lock_none);
             findPreference(ScreenLockType.PIN.preferenceKey).setViewId(R.id.lock_pin);
             findPreference(ScreenLockType.PASSWORD.preferenceKey).setViewId(R.id.lock_password);
+        }
+        protected void removePreferencesForFaceid() {
+            Log.d("faceid", "removePreferencesForFaceId");
+            if (mForFaceid) {
+                PreferenceScreen root = getPreferenceScreen();
+                root.removePreference(findPreference(ScreenLockType.NONE.preferenceKey));
+                root.removePreference(findPreference(ScreenLockType.SWIPE.preferenceKey));
+            }
         }
 
         private void updatePreferenceText() {
@@ -643,6 +665,7 @@ public class ChooseLockGeneric extends SettingsActivity {
          * {@link DevicePolicyManager#PASSWORD_QUALITY_UNSPECIFIED}
          */
         void updateUnlockMethodAndFinish(int quality, boolean disabled, boolean chooseLockSkipped) {
+            Log.d("faceid", "updateUnlockMethodAndFinish: mPasswordConfirmed : " + mPasswordConfirmed);
             // Sanity check. We should never get here without confirming user's existing password.
             if (!mPasswordConfirmed) {
                 throw new IllegalStateException("Tried to update password without confirming it");
@@ -699,6 +722,7 @@ public class ChooseLockGeneric extends SettingsActivity {
                     // For the purposes of M and N, groupId is the same as userId.
                     final int groupId = userId;
                     Fingerprint finger = new Fingerprint(null, groupId, 0, 0);
+                    Log.v(TAG, "Fingerprint start remove: " + finger.getFingerId());
                     mFingerprintManager.remove(finger, userId,
                             new RemovalCallback() {
                                 @Override
@@ -838,12 +862,16 @@ public class ChooseLockGeneric extends SettingsActivity {
 
         private boolean setUnlockMethod(String unlockMethod) {
             EventLog.writeEvent(EventLogTags.LOCK_SCREEN_TYPE, unlockMethod);
-
+            Log.d("faceid", "setUnlockMethod: " + unlockMethod);
             ScreenLockType lock = ScreenLockType.fromKey(unlockMethod);
             if (lock != null) {
                 switch (lock) {
                     case NONE:
                     case SWIPE:
+                        ///M: remove faceid
+                        if (FaceIdHelper.isFaceIdFeatureEnabled() && mFaceIdHelper.hasSetFaceIdForUser()) {
+                            mFaceIdHelper.deleteFaceId();
+                        }
                         updateUnlockMethodAndFinish(
                                 lock.defaultQuality,
                                 lock == ScreenLockType.NONE,
@@ -862,8 +890,14 @@ public class ChooseLockGeneric extends SettingsActivity {
         }
 
         private void showFactoryResetProtectionWarningDialog(String unlockMethodToSet) {
+            Log.d("faceid", "showFactoryResetProtectionWarningDialog unlockMethodToSet =" + unlockMethodToSet);
             int title = getResIdForFactoryResetProtectionWarningTitle();
             int message = getResIdForFactoryResetProtectionWarningMessage();
+            ///M: @{
+            if (FaceIdHelper.isFaceIdFeatureEnabled() && mFaceIdHelper.hasSetFaceIdForUser()) {
+                message = R.string.unlock_disable_frp_warning_content_faceid;
+            }
+            ///M 
             FactoryResetProtectionWarningDialog dialog =
                     FactoryResetProtectionWarningDialog.newInstance(
                             title, message, unlockMethodToSet);

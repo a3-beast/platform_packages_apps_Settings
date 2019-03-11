@@ -137,6 +137,9 @@ public class AppStorageSettings extends AppInfoWithHeader
     private AlertDialog.Builder mDialogBuilder;
     private ApplicationInfo mInfo;
 
+    public static final String ACTION_SETTINGS_PACKAGE_DATA_CLEARED =
+                    "com.mediatek.intent.action.SETTINGS_PACKAGE_DATA_CLEARED";
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -395,6 +398,11 @@ public class AppStorageSettings extends AppInfoWithHeader
         if (result == OP_SUCCESSFUL) {
             Log.i(TAG, "Cleared user data for package : " + packageName);
             updateSize();
+            /// M ALPS00235193: send the clear success broadcast { @
+            Intent packageDataCleared = new Intent(ACTION_SETTINGS_PACKAGE_DATA_CLEARED);
+            packageDataCleared.putExtra("packageName", packageName);
+            getActivity().sendBroadcast(packageDataCleared);
+            /// @ }
         } else {
             mButtonsPref.setButton1Enabled(true);
         }

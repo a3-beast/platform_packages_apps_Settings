@@ -15,7 +15,7 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_PACKAGE_NAME := SettingsUITests
+LOCAL_PACKAGE_NAME := MtkSettingsUITests
 LOCAL_PRIVATE_PLATFORM_APIS := true
 LOCAL_CERTIFICATE := platform
 LOCAL_COMPATIBILITY_SUITE := device-tests

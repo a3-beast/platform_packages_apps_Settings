@@ -300,6 +300,7 @@ public class RequestToggleWiFiActivity extends AlertActivity
                 return;
             }
             final int currentState = mWiFiManager.getWifiState();
+            Log.d(LOG_TAG, " currentState=" + currentState);
             switch (currentState) {
                 case WifiManager.WIFI_STATE_ENABLED:
                 case WifiManager.WIFI_STATE_DISABLED: {
@@ -309,7 +310,11 @@ public class RequestToggleWiFiActivity extends AlertActivity
                     }
                 } break;
 
-                case WifiManager.ERROR: {
+                // M:Fix CR:ALPS03874621,CTA test of CT fail.
+                // RootCause : wifimanager.error is 0,but wifimanager.wifi_state_disabling
+                // value is also 0.
+                // google original code: case WifiManager.ERROR
+                case WifiManager.WIFI_STATE_UNKNOWN: {
                     Toast.makeText(activity, R.string.wifi_error, Toast.LENGTH_SHORT).show();
                     finish();
                 } break;

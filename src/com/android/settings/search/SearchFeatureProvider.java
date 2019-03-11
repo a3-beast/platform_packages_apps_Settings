@@ -21,6 +21,8 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
+import com.android.settings.Utils;
 import android.widget.Toolbar;
 
 import com.android.settings.overlay.FeatureFactory;
@@ -65,6 +67,11 @@ public interface SearchFeatureProvider {
             return;
         }
         toolbar.setOnClickListener(tb -> {
+        //M: safe check for monkey test
+        if (Utils.isMonkeyRunning()) {
+            Log.d("SearchFeatureProvider", "Monkey running, dont click searchbar, Simply return");
+            return;
+        }
             final Intent intent = SEARCH_UI_INTENT;
             intent.setPackage(getSettingsIntelligencePkgName());
 
